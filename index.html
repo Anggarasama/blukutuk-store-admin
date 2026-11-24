@@ -446,14 +446,14 @@ async function loadProducts(){
     hideTokenBanner();
     document.getElementById('products').innerHTML = list.map(p=>`
       <div class="card plain" style="box-shadow:none">
-        <div class="flex"><b>${esc(p.name)}</b><span class="badge blue">${esc(p.app||'')}</span><span class="badge pink">${esc(p.type)}</span><span class="badge cyan">${esc(p.supplier)}</span><span class="badge ${p.enabled?'ok':'warn'}">${p.enabled?'Aktif':'Nonaktif'}</span>
+        <div class="flex"><b>${esc(p.name)}</b><span class="badge mono">${esc(p.code||'')}</span><span class="badge blue">${esc(p.app||'')}</span><span class="badge pink">${esc(p.type)}</span><span class="badge cyan">${esc(p.supplier)}</span><span class="badge ${p.enabled?'ok':'warn'}">${p.enabled?'Aktif':'Nonaktif'}</span>
         <button class="btn sm ghost" onclick="toggleProduct(${p.id},${p.enabled?0:1})">${p.enabled?'Nonaktifkan':'Aktifkan'}</button>
         <button class="btn sm ghost" onclick="editProduct(${p.id})">Edit</button>
         <button class="btn sm danger" onclick="deleteProduct(${p.id})">Hapus</button></div>
         <p class="muted">${esc(p.description||'')}</p>
         ${(p.variants||[]).map(v=>`
           <div style="border-top:1px solid var(--border);padding:8px 0">
-            <div class="flex"><b>${esc(v.name)}</b><span>${rupiah(v.price)}</span><span class="badge">${esc(v.duration||'-')}</span><span class="badge">${esc(v.kind||'-')}</span><span class="badge">${esc(v.stock_type)}</span><span class="badge ${v.enabled?'ok':'warn'}">${v.enabled?'Aktif':'Nonaktif'}</span>
+            <div class="flex"><b>${esc(v.name)}</b><span class="badge mono">${esc(v.code||'')}</span><span>${rupiah(v.price)}</span><span class="badge">${esc(v.duration||'-')}</span><span class="badge">${esc(v.kind||'-')}</span><span class="badge">${esc(v.stock_type)}</span><span class="badge ${v.enabled?'ok':'warn'}">${v.enabled?'Aktif':'Nonaktif'}</span>
             <button class="btn sm ghost" onclick="toggleVariant(${v.id},${v.enabled?0:1})">${v.enabled?'Nonaktifkan':'Aktifkan'}</button>
             <button class="btn sm ghost" onclick="editVariant(${v.id})">Edit</button>
             <button class="btn sm ghost" onclick="addStock(${v.id})">+ Stok</button></div>
@@ -467,15 +467,17 @@ async function loadProducts(){
 async function newProduct(){
   const name = prompt('Nama produk / aplikasi (contoh: CapCut):'); if(!name) return;
   const app = prompt('Nama aplikasi (untuk grup katalog, contoh: CapCut):', name); if(app===null) return;
-  try{ await api('/products',{method:'POST',body:JSON.stringify({name,app,type:'otomatis',supplier:'manual',enabled:1})}); toast('Produk dibuat.'); loadProducts(); }catch(e){ toast(e.message); }
+  const code = prompt('Kode produk (contoh: CC — kosongkan untuk dibuat otomatis):','')||'';
+  try{ await api('/products',{method:'POST',body:JSON.stringify({name,app,code,type:'otomatis',supplier:'manual',enabled:1})}); toast('Produk dibuat.'); loadProducts(); }catch(e){ toast(e.message); }
 }
 async function editProduct(id){
   const p = (window._products||[]).find(x=>x.id===id); if(!p) return;
   const name = prompt('Nama produk:', p.name); if(name===null) return;
+  const code = prompt('Kode produk (dipakai buyer, contoh: CC):', p.code||''); if(code===null) return;
   const desc = prompt('Deskripsi:', p.description||''); if(desc===null) return;
   const supplier = prompt('Supplier (manual/lollipop/lhie/buymail/fireflazz/pterodactyl):', p.supplier); if(supplier===null) return;
   const spid = prompt('Supplier Product ID / Service ID (kosongkan kalau manual):', p.supplier_product_id||''); if(spid===null) return;
-  try{ await api('/products/'+id,{method:'PUT',body:JSON.stringify({name,description:desc,supplier,supplier_product_id:spid})}); loadProducts(); }catch(e){ toast(e.message); }
+  try{ await api('/products/'+id,{method:'PUT',body:JSON.stringify({name,code,description:desc,supplier,supplier_product_id:spid})}); loadProducts(); }catch(e){ toast(e.message); }
 }
 async function toggleProduct(id,enabled){ try{ await api('/products/'+id,{method:'PUT',body:JSON.stringify({enabled:!!enabled})}); loadProducts(); }catch(e){ toast(e.message); } }
 async function deleteProduct(id){ if(!confirm('Hapus produk ini beserta variannya?')) return; try{ await api('/products/'+id,{method:'DELETE'}); loadProducts(); }catch(e){ toast(e.message); } }
@@ -483,13 +485,15 @@ async function newVariant(pid){
   const name = prompt('Nama varian (contoh: Private 30 Hari):'); if(!name) return;
   const price = Number(prompt('Harga jual (Rp, angka saja):','10000')); if(!price) return;
   const duration = prompt('Durasi (contoh: 30 hari):','30 hari')||'';
-  try{ await api('/products/'+pid+'/variants',{method:'POST',body:JSON.stringify({name,price,duration,stock_type:'otomatis',delivery_template:'📧 Email: {{email}}\n🔑 Password: {{password}}'})}); loadProducts(); }catch(e){ toast(e.message); }
+  const code = prompt('Kode varian (contoh: CC30HP — kosongkan untuk dibuat otomatis):','')||'';
+  try{ await api('/products/'+pid+'/variants',{method:'POST',body:JSON.stringify({name,code,price,duration,stock_type:'otomatis',delivery_template:'📧 Email: {{email}}\n🔑 Password: {{password}}'})}); loadProducts(); }catch(e){ toast(e.message); }
 }
 async function editVariant(id){
   const v = (window._products||[]).flatMap(p=>p.variants||[]).find(x=>x.id===id); if(!v) return;
   const price = Number(prompt('Harga jual (Rp):', v.price)); if(price===0||isNaN(price)) return;
+  const code = prompt('Kode varian (dipakai buyer, contoh: CC30HP):', v.code||''); if(code===null) return;
   const tpl = prompt('Template pengiriman (pakai {{email}} {{password}} dst):', v.delivery_template||''); if(tpl===null) return;
-  try{ await api('/variants/'+id,{method:'PUT',body:JSON.stringify({price,delivery_template:tpl})}); loadProducts(); }catch(e){ toast(e.message); }
+  try{ await api('/variants/'+id,{method:'PUT',body:JSON.stringify({price,code,delivery_template:tpl})}); loadProducts(); }catch(e){ toast(e.message); }
 }
 async function toggleVariant(id,enabled){ try{ await api('/variants/'+id,{method:'PUT',body:JSON.stringify({enabled:!!enabled})}); loadProducts(); }catch(e){ toast(e.message); } }
 async function addStock(id){
