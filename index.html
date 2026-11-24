@@ -621,6 +621,8 @@ async function loadSubscribers(){
 // Integrasi — daftar kunci statis (selalu tampil), status terisi diisi dari API bila bisa
 const INT_KEYS = [
   {key:'wa_phone_number',label:'Nomor WhatsApp Bot (KEDUA, format 628xxx tanpa +)',secret:false},
+  {key:'owner_phone',label:'Nomor Owner / Admin (format 628xxx tanpa +, untuk perintah & notif via WA)',secret:false},
+  {key:'owner_lid',label:'Owner LID (angka @lid, isi kalau pesan owner masuk sebagai @lid — lihat bot.log)',secret:false},
   {key:'telegram_bot_token',label:'Telegram Bot Token (BotFather)',secret:true},
   {key:'nexapayz_api_key',label:'NexaPayz API Key',secret:true},
   {key:'nexapayz_webhook_secret',label:'NexaPayz Webhook Secret',secret:true},
