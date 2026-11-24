@@ -214,7 +214,7 @@
   <section id="tab-supplier">
     <div class="card">
       <h2><span class="dot" style="background:linear-gradient(135deg,#d97706,#f59e0b)"></span>Supplier — pilih produk yang dijual</h2>
-      <p class="muted">Semua produk supplier default <b>OFF</b>. Anggara aktifkan sendiri yang dipilih saja. Harga jual = harga supplier + markup (isi di kolom Harga Jual).</p>
+      <p class="muted">Semua produk supplier default <b>OFF</b>. Anggara aktifkan sendiri yang dipilih saja. Harga jual = harga supplier + markup (isi di kolom Harga Jual). Tombol <b>Jual ▶</b> memasukkan produk ke katalog WA/Telegram dengan nama aslinya dari Lhie (mis. Muse Ai 1b Token) — nama &amp; kode bisa diubah di tab Produk, stok ngikut Lhie.</p>
       <div class="flex">
         <button class="btn" onclick="syncSupplier('lhie')">↻ Sync Katalog Lhie</button>
         <button class="btn" onclick="syncSupplier('lollipop')">↻ Sync Layanan Lollipop</button>
@@ -552,7 +552,7 @@ async function loadSupplier(supplier){
         <td>${esc(x.name)}<br><span class="mono muted">${esc(x.supplier_product_id)}</span></td>
         <td>${rupiah(x.supplier_price)}</td><td>${rupiah(x.sell_price)}</td>
         <td><span class="badge ${x.enabled?'ok':'warn'}">${x.enabled?'AKTIF':'OFF'}</span></td>
-        <td><button class="btn sm" onclick="toggleSupplier(${x.id},${x.enabled?0:1})">${x.enabled?'Matikan':'Aktifkan'}</button></td></tr>`).join('')+'</table>'
+        <td><button class="btn sm" onclick="toggleSupplier(${x.id},${x.enabled?0:1})">${x.enabled?'Matikan':'Aktifkan'}</button> <button class="btn sm" onclick="publishSupplier(${x.id})">Jual ▶</button></td></tr>`).join('')+'</table>'
       : '<p class="muted">Belum ada — tekan Sync dulu.</p>');
     window._supplier = supplier;
   }catch(e){ handleLoadError(e, 'supplierList'); }
@@ -566,6 +566,13 @@ async function toggleSupplier(id,enabled){
     if(enabled){ sell = Number(prompt('Harga jual (Rp) untuk produk ini:', '10000')); if(!sell) return; }
     await api('/supplier-products/'+id,{method:'PUT',body:JSON.stringify({enabled:!!enabled,sell_price:sell})});
     toast(enabled?'Produk diaktifkan.':'Produk dimatikan.'); loadSupplier(window._supplier||'lhie');
+  }catch(e){ toast(e.message); }
+}
+async function publishSupplier(id){
+  try{
+    const r = await api('/supplier-products/'+id+'/publish',{method:'POST',body:'{}'});
+    toast(r.already ? ('Sudah ada di katalog (kode: '+(r.code||'')+'). Nama/kode tidak diubah.') : ('Dipublish ke katalog! Kode: '+(r.code||'')+' — nama & kode bisa diubah di tab Produk.'));
+    loadSupplier(window._supplier||'lhie');
   }catch(e){ toast(e.message); }
 }
 // Tombol
