@@ -6,37 +6,50 @@
 <title>Blukutuk Store — Admin Panel</title>
 <style>
   :root{
-    --bg:#eef1fb; --surface:#ffffff; --text:#1e1b3a; --muted:#6b7194;
-    --border:#dfe4f5; --ink:#1e1b4b; --indigo:#4f46e5; --violet:#7c3aed; --cyan:#0891b2;
+    --bg:#eef1fb; --surface:#ffffff; --surface-2:#f6f7fe; --text:#1e1b3a; --muted:#6b7194;
+    --border:#dfe4f5; --input-bg:#ffffff; --ink:#1e1b4b; --indigo:#4f46e5; --violet:#7c3aed; --cyan:#0891b2;
     --pink:#db2777; --amber:#d97706; --green:#059669; --red:#dc2626;
-    --shadow:0 8px 28px rgba(30,27,75,.10); --radius:16px;
+    --shadow:0 8px 28px rgba(30,27,75,.10); --shadow-lg:0 14px 40px rgba(30,27,75,.16); --radius:18px;
+  }
+  html[data-theme="dark"]{
+    --bg:#0e1020; --surface:#1a1d33; --surface-2:#22264a; --text:#e8eaf6; --muted:#9aa0c3;
+    --border:#2d3252; --input-bg:#232742; --ink:#e8eaf6;
+    --shadow:0 8px 28px rgba(0,0,0,.45); --shadow-lg:0 14px 40px rgba(0,0,0,.55);
   }
   *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
-  header{background:linear-gradient(120deg,#1e1b4b 0%,#312e81 45%,#0e7490 100%);color:#fff;padding:18px 20px 22px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;box-shadow:0 4px 20px rgba(30,27,75,.35)}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;transition:background .25s,color .25s}
+  header{background:linear-gradient(120deg,#1e1b4b 0%,#312e81 45%,#0e7490 100%);color:#fff;padding:18px 20px 22px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;box-shadow:0 4px 20px rgba(30,27,75,.35);position:relative;overflow:hidden}
+  header::after{content:'';position:absolute;right:-60px;top:-80px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(244,114,182,.35),transparent 70%);pointer-events:none}
   .logo{font-size:24px;font-weight:900;letter-spacing:.3px}
   .logo span{background:linear-gradient(90deg,#fbbf24,#f472b6);-webkit-background-clip:text;background-clip:text;color:transparent}
   .sub{color:#c7d2fe;font-size:13px}
   .leona-slot{margin-left:auto;display:flex;align-items:center;gap:10px}
   .leona-ph{width:54px;height:54px;border-radius:50%;border:2px dashed #fbbf24;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:24px}
   .leona-note{font-size:12px;color:#c7d2fe;max-width:200px}
-  nav{display:flex;gap:8px;padding:14px 20px 4px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  nav button{flex:0 0 auto;border:1px solid var(--border);background:var(--surface);padding:9px 16px;border-radius:999px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text);box-shadow:0 2px 8px rgba(30,27,75,.06)}
+  .theme-btn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;width:42px;height:42px;border-radius:50%;font-size:19px;cursor:pointer;transition:transform .15s,background .15s;flex:0 0 auto}
+  .theme-btn:hover{background:rgba(255,255,255,.26);transform:scale(1.07)}
+  nav{display:flex;gap:8px;padding:12px 20px 10px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  nav button{flex:0 0 auto;border:1px solid var(--border);background:var(--surface);padding:9px 16px;border-radius:999px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text);box-shadow:0 2px 8px rgba(30,27,75,.06);transition:transform .15s,box-shadow .15s,background .15s}
+  nav button:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(30,27,75,.12)}
   nav button.active{background:linear-gradient(120deg,var(--indigo),var(--violet));color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(79,70,229,.4)}
   main{max-width:1080px;margin:0 auto;padding:10px 20px 60px}
   section{display:none}
-  section.active{display:block}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin:14px 0;position:relative;overflow:hidden}
+  section.active{display:block;animation:fadeIn .25s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin:14px 0;position:relative;overflow:hidden;transition:box-shadow .2s,transform .2s,background .25s,border-color .25s}
   .card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--indigo),var(--violet),var(--cyan),var(--pink))}
   .card.plain::before{display:none}
+  @media(hover:hover){.card:hover{box-shadow:var(--shadow-lg)}}
   h2{margin:0 0 6px;font-size:20px}
   h2 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:1px}
   h3{margin:18px 0 8px;font-size:15px}
   p.muted{color:var(--muted);font-size:13px;margin:4px 0}
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-  .stat{border-radius:14px;padding:14px;color:#fff;box-shadow:0 6px 18px rgba(30,27,75,.18)}
-  .stat b{font-size:24px;display:block}
-  .stat span{font-size:12px;opacity:.9}
+  .stat{border-radius:16px;padding:16px 14px;color:#fff;box-shadow:0 6px 18px rgba(30,27,75,.18);position:relative;overflow:hidden;transition:transform .18s,box-shadow .18s}
+  .stat::after{content:'';position:absolute;top:-40px;right:-40px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.14)}
+  .stat b{font-size:26px;display:block;line-height:1.15}
+  .stat span{font-size:12px;opacity:.92}
+  @media(hover:hover){.stat:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(30,27,75,.28)}}
   .stat.c1{background:linear-gradient(135deg,#4f46e5,#7c3aed)}
   .stat.c2{background:linear-gradient(135deg,#059669,#10b981)}
   .stat.c3{background:linear-gradient(135deg,#d97706,#f59e0b)}
@@ -44,33 +57,52 @@
   .stat.c5{background:linear-gradient(135deg,#db2777,#f472b6)}
   .stat.c6{background:linear-gradient(135deg,#4f46e5,#0891b2)}
   table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical-align:top}
-  th{color:var(--muted);font-weight:600}
-  input,select,textarea{width:100%;padding:10px 11px;border:1.5px solid var(--border);border-radius:10px;font:inherit;background:#fff;color:var(--text)}
-  input:focus,select:focus,textarea:focus{outline:2px solid #a5b4fc;border-color:var(--indigo)}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+  tbody tr:nth-child(even){background:var(--surface-2)}
+  tbody tr:hover{background:color-mix(in srgb,var(--indigo) 6%,transparent)}
+  input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font:inherit;background:var(--input-bg);color:var(--text);transition:border-color .15s,box-shadow .15s}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--indigo);box-shadow:0 0 0 3px rgba(79,70,229,.18)}
   textarea{min-height:90px;resize:vertical}
   label{font-size:13px;color:var(--muted);display:block;margin:10px 0 4px;font-weight:600}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-  @media(max-width:640px){.row,.row3{grid-template-columns:1fr}}
-  button.btn{background:linear-gradient(120deg,var(--indigo),var(--violet));color:#fff;border:0;padding:10px 16px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(79,70,229,.35)}
+  @media(max-width:640px){.row,.row3{grid-template-columns:1fr}.logo{font-size:20px}.leona-note{display:none}}
+  button.btn{background:linear-gradient(120deg,var(--indigo),var(--violet));color:#fff;border:0;padding:10px 16px;border-radius:12px;cursor:pointer;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(79,70,229,.35);transition:transform .15s,box-shadow .15s,filter .15s}
+  button.btn:hover{transform:translateY(-1px);filter:brightness(1.06)}
+  button.btn:active{transform:scale(.97)}
+  button.btn:focus-visible{outline:3px solid rgba(79,70,229,.4);outline-offset:2px}
   button.btn.ghost{background:var(--surface);color:var(--text);border:1.5px solid var(--border);box-shadow:none}
   button.btn.green{background:linear-gradient(120deg,#059669,#10b981);box-shadow:0 4px 14px rgba(5,150,105,.35)}
   button.btn.danger{background:linear-gradient(120deg,#dc2626,#f43f5e);box-shadow:0 4px 14px rgba(220,38,38,.3)}
-  button.btn.sm{padding:6px 10px;font-size:12px}
+  button.btn.sm{padding:7px 12px;font-size:12px;border-radius:9px}
   .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;background:#e0e7ff;color:#3730a3}
   .badge.ok{background:#d1fae5;color:#065f46}.badge.warn{background:#fef3c7;color:#92400e}.badge.bad{background:#ffe4e6;color:#9f1239}
   .badge.blue{background:#dbeafe;color:#1e40af}.badge.pink{background:#fce7f3;color:#9d174d}.badge.cyan{background:#cffafe;color:#155e75}
+  html[data-theme="dark"] .badge{background:#2d3252;color:#c7d2fe}
+  html[data-theme="dark"] .badge.ok{background:#064e3b;color:#a7f3d0}
+  html[data-theme="dark"] .badge.warn{background:#78350f;color:#fde68a}
+  html[data-theme="dark"] .badge.bad{background:#7f1d1d;color:#fecdd3}
+  html[data-theme="dark"] .badge.blue{background:#1e3a8a;color:#bfdbfe}
+  html[data-theme="dark"] .badge.pink{background:#831843;color:#fbcfe8}
+  html[data-theme="dark"] .badge.cyan{background:#164e63;color:#a5f3fc}
   .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;word-break:break-all}
   .hidden{display:none}
-  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1e1b4b;color:#fff;padding:11px 18px;border-radius:999px;font-size:13px;box-shadow:var(--shadow);display:none;z-index:99;max-width:92vw;text-align:center}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1e1b4b;color:#fff;padding:11px 18px;border-radius:999px;font-size:13px;box-shadow:var(--shadow-lg);display:none;z-index:99;max-width:92vw;text-align:center;animation:toastIn .25s ease}
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
   .banner-preview{max-width:100%;border-radius:10px;border:1px solid var(--border)}
   .note{background:#fffbeb;border:1.5px solid #fcd34d;border-radius:12px;padding:11px 13px;font-size:13px;margin:10px 0}
   .err{background:#fef2f2;border:1.5px solid #fca5a5;border-radius:12px;padding:11px 13px;font-size:13px;margin:10px 0;color:#991b1b}
+  html[data-theme="dark"] .note{background:#451a03;border-color:#92400e;color:#fde68a}
+  html[data-theme="dark"] .err{background:#450a0a;border-color:#7f1d1d;color:#fecaca}
   .token-banner{background:linear-gradient(120deg,#fef3c7,#fde68a);border:1.5px solid #f59e0b;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin:14px 0}
   .token-banner h3{margin:0 0 4px;color:#92400e}
   .token-banner p{margin:4px 0;font-size:13px;color:#78350f}
+  .qr-box{display:inline-block;background:#fff;padding:12px;border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow);margin:6px 0}
+  .qr-box img{display:block;width:220px;height:220px}
+  .pair-code{font-size:32px;font-weight:900;letter-spacing:6px}
+  footer{max-width:1080px;margin:0 auto;padding:0 20px 30px;text-align:center;color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
@@ -83,6 +115,7 @@
     <div class="leona-note">Slot foto Leona — nanti diisi Anggara di Pengaturan (belum ada gambar, jangan pakai gambar asal).</div>
     <div class="leona-ph" title="Slot foto Leona (placeholder)">💕</div>
   </div>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Ganti tema gelap / terang">🌙</button>
 </header>
 <nav id="tabs">
   <button data-tab="dashboard" class="active">📊 Dashboard</button>
@@ -269,9 +302,13 @@
   </section>
 </main>
 <div class="toast" id="toast"></div>
+<footer>Blukutuk Store · Bot v1 — 1 backend · 1 database · WA + Telegram · NexaPayz</footer>
 <script>
 const API = '/api';
 let adminToken = localStorage.getItem('blukutuk_admin_token') || '';
+function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('blukutuk_theme',t); const b=document.getElementById('themeBtn'); if(b) b.textContent = t==='dark'?'☀️':'🌙'; }
+function toggleTheme(){ applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'); }
+applyTheme(localStorage.getItem('blukutuk_theme')||'light');
 document.getElementById('adminToken').value = adminToken;
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',4000); }
 function headers(){ const h={'Content-Type':'application/json'}; if(adminToken) h['x-admin-token']=adminToken; return h; }
@@ -328,6 +365,50 @@ async function copyPairingCode(code){
   }
   toast('Kode pairing disalin — tempel di WhatsApp.');
 }
+let waRefreshTimer = null;
+function startWaRefresh(){ if(waRefreshTimer) return; waRefreshTimer = setInterval(()=>{ if(document.getElementById('tab-dashboard').classList.contains('active')) renderWaPairing(); }, 20000); }
+function stopWaRefresh(){ if(waRefreshTimer){ clearInterval(waRefreshTimer); waRefreshTimer = null; } }
+async function requestPairingCode(){
+  try{ const r = await api('/whatsapp/pairing-code',{method:'POST'}); toast(r.cached?'Kode pairing masih berlaku — ditampilkan lagi.':'Kode pairing dibuat — masukkan segera.'); renderWaPairing(); }
+  catch(e){ toast('Gagal minta kode: '+e.message); }
+}
+async function renderWaPairing(){
+  const el = document.getElementById('waPairing');
+  try{
+    const wa = await api('/whatsapp/status');
+    if(wa.registered){
+      el.innerHTML = '<p>✅ <b>WhatsApp sudah terhubung</b>'+(wa.connected_as?(' sebagai <span class="mono">'+esc(wa.connected_as)+'</span>'):'')+'.</p><p class="muted">Kalau nanti logout, hapus folder data/wa-auth di server lalu pairing ulang.</p>';
+      stopWaRefresh();
+    } else if(wa.qr){
+      const codeHtml = wa.pairing_code ? (function(){ const raw=wa.pairing_code; const grouped = raw.length===8 ? raw.slice(0,4)+'-'+raw.slice(4) : raw;
+        return '<p class="pair-code mono">'+esc(grouped)+'</p><p><button class="btn sm" onclick="copyPairingCode(\''+esc(raw)+'\')">📋 Salin Kode</button> <span class="muted">— tempel langsung di WhatsApp.</span></p>'; })() : '';
+      el.innerHTML = '<p>Nomor bot: <b class="mono">'+esc(wa.phone||'-')+'</b></p>'
+        + '<p style="font-size:15px"><b>Cara 1 — Scan QR</b> (paling gampang): buka WA nomor kedua → <b>Perangkat Tertaut → Tautkan perangkat</b> → scan QR di bawah.</p>'
+        + '<div class="qr-box"><img src="'+wa.qr+'" alt="QR WhatsApp" width="220" height="220"></div>'
+        + '<p class="muted">QR berubah tiap ~20 detik — halaman ini refresh otomatis. Kalau sudah tidak berlaku, tekan ↻ Cek Lagi.</p>'
+        + '<p style="font-size:15px"><b>Cara 2 — Kode pairing:</b> tekan tombol di bawah, lalu masukkan kodenya di WA → <b>Perangkat Tertaut → Tautkan dengan nomor telepon</b>.</p>'
+        + '<p><button class="btn sm" onclick="requestPairingCode()">🔑 Minta Kode Pairing</button></p>'
+        + codeHtml
+        + '<p class="muted">Minta kode hanya saat Sayang siap memasukkannya — kode cepat kedaluwarsa.</p>';
+      startWaRefresh();
+    } else if(wa.pairing_code){
+      const raw = wa.pairing_code;
+      const grouped = raw.length === 8 ? raw.slice(0,4)+'-'+raw.slice(4) : raw;
+      el.innerHTML = '<p>Nomor bot: <b class="mono">'+esc(wa.phone||'-')+'</b></p>'
+        + '<p style="font-size:15px">Kode pairing (masukkan di WA nomor kedua → <b>Perangkat Tertaut → Tautkan dengan nomor telepon</b>):</p>'
+        + '<p class="pair-code mono">'+esc(grouped)+'</p>'
+        + '<p><button class="btn sm" onclick="copyPairingCode(\''+esc(raw)+'\')">📋 Salin Kode</button> <span class="muted">— tempel langsung di WhatsApp, jangan diketik manual (gampang salah baca).</span></p>'
+        + '<p class="muted">Kode cepat kedaluwarsa — masukkan segera. Kalau sudah tidak berlaku, tekan tombol Minta Kode Pairing di atas untuk kode baru.</p>';
+      startWaRefresh();
+    } else if(!wa.phone){
+      el.innerHTML = '<p>⚠️ <b>Nomor WhatsApp bot belum diisi.</b> Isi <b>Nomor WhatsApp Bot</b> di tab <b>Integrasi</b> (format 628xxx, nomor KEDUA — jangan nomor utama), simpan, lalu restart bot. Kode pairing / QR akan muncul di sini.</p>';
+      stopWaRefresh();
+    } else {
+      el.innerHTML = '<p>Nomor bot: <b class="mono">'+esc(wa.phone)+'</b></p><p><button class="btn sm" onclick="requestPairingCode()">🔑 Minta Kode Pairing</button></p><p class="muted">Atau tunggu QR muncul lalu scan. Kalau tidak muncul juga, restart bot.</p>';
+      startWaRefresh();
+    }
+  }catch(e2){ el.innerHTML = '<p class="muted">Tidak bisa cek status WA: '+esc(e2.message)+'</p>'; }
+}
 async function loadDashboard(){
   try{
     const d = await api('/dashboard');
@@ -349,25 +430,7 @@ async function loadDashboard(){
     const integ = await api('/settings/integrations').catch(()=>[]);
     const missing = integ.filter(x=>!x.filled).map(x=>esc(x.label));
     document.getElementById('checklist').textContent = missing.length ? 'Belum terisi: '+missing.join(', ') : 'Semua integrasi utama sudah terisi. 🎉';
-    try{
-      const wa = await api('/whatsapp/status');
-      const el = document.getElementById('waPairing');
-      if(wa.registered){
-        el.innerHTML = '<p>✅ <b>WhatsApp sudah terhubung</b>'+(wa.connected_as?(' sebagai <span class="mono">'+esc(wa.connected_as)+'</span>'):'')+'.</p><p class="muted">Kalau nanti logout, hapus folder data/wa-auth di server lalu pairing ulang.</p>';
-      } else if(wa.pairing_code){
-        const raw = wa.pairing_code;
-        const grouped = raw.length === 8 ? raw.slice(0,4)+'-'+raw.slice(4) : raw;
-        el.innerHTML = '<p>Nomor bot: <b class="mono">'+esc(wa.phone||'-')+'</b></p>'
-          + '<p style="font-size:15px">Kode pairing (masukkan di WA nomor kedua → <b>Perangkat Tertaut → Tautkan dengan nomor telepon</b>):</p>'
-          + '<p style="font-size:32px;font-weight:900;letter-spacing:6px" class="mono">'+esc(grouped)+'</p>'
-          + '<p><button class="btn sm" onclick="copyPairingCode(\''+esc(raw)+'\')">📋 Salin Kode</button> <span class="muted">— tempel langsung di WhatsApp, jangan diketik manual (gampang salah baca).</span></p>'
-          + '<p class="muted">Kode cepat kedaluwarsa — masukkan segera. Kalau sudah tidak berlaku, restart bot (panel Zyro → Restart) untuk minta kode baru.</p>';
-      } else if(!wa.phone){
-        el.innerHTML = '<p>⚠️ <b>Nomor WhatsApp bot belum diisi.</b> Isi <b>Nomor WhatsApp Bot</b> di tab <b>Integrasi</b> (format 628xxx, nomor KEDUA — jangan nomor utama), simpan, lalu restart bot. Kode pairing akan muncul di sini.</p>';
-      } else {
-        el.innerHTML = '<p class="muted">⏳ Menunggu kode pairing untuk <span class="mono">'+esc(wa.phone)+'</span>… tekan <b>Cek Lagi</b> sebentar lagi. Kalau tidak muncul juga, restart bot.</p>';
-      }
-    }catch(e2){ document.getElementById('waPairing').innerHTML = '<p class="muted">Tidak bisa cek status WA: '+esc(e2.message)+'</p>'; }
+    renderWaPairing();
   }catch(e){
     handleLoadError(e, 'lowstock');
     document.getElementById('recent').innerHTML = authErrorHtmlOr(e);
