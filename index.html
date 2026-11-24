@@ -319,6 +319,15 @@ document.querySelectorAll('#tabs button').forEach(b=>{
   };
 });
 // Dashboard
+async function copyPairingCode(code){
+  try{ await navigator.clipboard.writeText(code); }
+  catch(e){
+    const ta=document.createElement('textarea'); ta.value=code; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); }catch(e2){}
+    ta.remove();
+  }
+  toast('Kode pairing disalin — tempel di WhatsApp.');
+}
 async function loadDashboard(){
   try{
     const d = await api('/dashboard');
@@ -346,9 +355,12 @@ async function loadDashboard(){
       if(wa.registered){
         el.innerHTML = '<p>✅ <b>WhatsApp sudah terhubung</b>'+(wa.connected_as?(' sebagai <span class="mono">'+esc(wa.connected_as)+'</span>'):'')+'.</p><p class="muted">Kalau nanti logout, hapus folder data/wa-auth di server lalu pairing ulang.</p>';
       } else if(wa.pairing_code){
+        const raw = wa.pairing_code;
+        const grouped = raw.length === 8 ? raw.slice(0,4)+'-'+raw.slice(4) : raw;
         el.innerHTML = '<p>Nomor bot: <b class="mono">'+esc(wa.phone||'-')+'</b></p>'
           + '<p style="font-size:15px">Kode pairing (masukkan di WA nomor kedua → <b>Perangkat Tertaut → Tautkan dengan nomor telepon</b>):</p>'
-          + '<p style="font-size:32px;font-weight:900;letter-spacing:6px" class="mono">'+esc(wa.pairing_code)+'</p>'
+          + '<p style="font-size:32px;font-weight:900;letter-spacing:6px" class="mono">'+esc(grouped)+'</p>'
+          + '<p><button class="btn sm" onclick="copyPairingCode(\''+esc(raw)+'\')">📋 Salin Kode</button> <span class="muted">— tempel langsung di WhatsApp, jangan diketik manual (gampang salah baca).</span></p>'
           + '<p class="muted">Kode cepat kedaluwarsa — masukkan segera. Kalau sudah tidak berlaku, restart bot (panel Zyro → Restart) untuk minta kode baru.</p>';
       } else if(!wa.phone){
         el.innerHTML = '<p>⚠️ <b>Nomor WhatsApp bot belum diisi.</b> Isi <b>Nomor WhatsApp Bot</b> di tab <b>Integrasi</b> (format 628xxx, nomor KEDUA — jangan nomor utama), simpan, lalu restart bot. Kode pairing akan muncul di sini.</p>';
