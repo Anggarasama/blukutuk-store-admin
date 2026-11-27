@@ -227,12 +227,14 @@
   <section id="tab-supplier">
     <div class="card">
       <h2><span class="dot" style="background:linear-gradient(135deg,#d97706,#f59e0b)"></span>Supplier — pilih produk yang dijual</h2>
-      <p class="muted">Semua produk supplier default <b>OFF</b>. Anggara aktifkan sendiri yang dipilih saja. Harga jual = harga supplier + markup (isi di kolom Harga Jual). Tombol <b>Jual ▶</b> memasukkan produk ke katalog WA/Telegram dengan nama aslinya dari Lhie (mis. Muse Ai 1b Token) — nama &amp; kode bisa diubah di tab Produk, stok ngikut Lhie.</p>
+      <p class="muted">Semua produk supplier default <b>OFF</b>. Anggara aktifkan sendiri yang dipilih saja. Harga jual = harga supplier + markup (isi di kolom Harga Jual). Tombol <b>Jual ▶</b> memasukkan produk ke katalog WA/Telegram dengan nama aslinya dari Lhie (mis. Muse Ai 1b Token) — nama &amp; kode bisa diubah di tab Produk, stok ngikut Lhie. <b>SMM (Lollipop / BuzzerPanel):</b> Harga Jual yang diisi = harga <b>per 100</b> (rate supplier adalah per 1000); produk yang dipublish masuk kategori <b>smm</b> dan tampil di menu Kebutuhan Sosmed.</p>
       <div class="flex">
         <button class="btn" onclick="syncSupplier('lhie')">↻ Sync Katalog Lhie</button>
         <button class="btn" onclick="syncSupplier('lollipop')">↻ Sync Layanan Lollipop</button>
+        <button class="btn" onclick="syncSupplier('buzzerpanel')">↻ Sync Layanan BuzzerPanel</button>
         <button class="btn ghost" onclick="loadSupplier('lhie')">Lihat Lhie</button>
         <button class="btn ghost" onclick="loadSupplier('lollipop')">Lihat Lollipop</button>
+        <button class="btn ghost" onclick="loadSupplier('buzzerpanel')">Lihat BuzzerPanel</button>
       </div>
       <div id="supplierList"><p class="muted">Memuat…</p></div>
     </div>
@@ -240,6 +242,8 @@
       <h3>Catatan tiap supplier</h3>
       <ul style="font-size:14px">
         <li><b>Lhie:</b> order dibayar penuh dari saldo Lhie (IDR/USD, tidak bisa dibelah). Stok informasional, checkout recheck harga/stok. Pengiriman async (not_ready → processing → complete). Tombol “Cek Delivery” ada di detail pesanan.</li>
+        <li><b>Lollipop:</b> SMM (Perfect Panel API v2). Rate supplier per 1000; harga jual di panel adalah per 100. Produk yang dipublish masuk menu Kebutuhan Sosmed (kategori smm).</li>
+        <li><b>BuzzerPanel:</b> SMM kedua (Perfect Panel API v2, https://buzzerpanel.id/api/v2). Sama seperti Lollipop — rate per 1000, harga jual per 100, publish ke kategori smm. API key diisi di tab Integrasi.</li>
         <li><b>BuyMail:</b> Gmail, modal contoh Rp4.800/akun, live-check 10–30 detik, refund maks 2 jam (screenshot HP). API terbuka setelah total deposit Rp100.000.</li>
         <li><b>Fireflazz:</b> top-up game H2H, deposit pertama min Rp100.000 QRIS, gagal = saldo kembali. Toko Anggara: <span class="mono">anggaratopup.fireflazz.com</span> (saldo Rp0 saat dicek 24 Nov 2026). Detail endpoint H2H ada di dashboard Fireflazz — samakan di kode sebelum jualan.</li>
         <li><b>Pterodactyl:</b> jual panel, bot create user + server otomatis. Server habis masa aktif di-suspend (tidak dihapus).</li>
@@ -251,7 +255,7 @@
   <section id="tab-tombol">
     <div class="card">
       <h2><span class="dot" style="background:linear-gradient(135deg,#059669,#10b981)"></span>Manajemen Tombol</h2>
-      <p class="muted">Tombol default (Katalog, Cek Pesanan, Bantuan, Beli Sekarang, Kembali, Ya Bayar, Batal) <b>tidak bisa dihapus</b> — hanya bisa diedit / disembunyikan / diurutkan. Tombol tambahan bisa dihapus. <b>Tombol link:</b> isi aksi <span class="mono">url</span> + kolom Target dengan linknya (mis. saluran WA, Telegram, website) — tombol link muncul di pesan "🔗 Link Penting" terpisah. Target kosong = tombol disembunyikan. Perhatian: WhatsApp maks <b>3 tombol balasan</b> dan <b>3 tombol link</b> per pesan — panel memperingatkan kalau melebihi.</p>
+      <p class="muted">Tombol default (Katalog, Cek Pesanan, Bantuan, Kebutuhan Sosmed, Riwayat Pesanan, Terminologi, Top-up, Beli Sekarang, Kembali, Ya Bayar, Batal) <b>tidak bisa dihapus</b> — hanya bisa diedit / disembunyikan / diurutkan. Tombol tambahan bisa dihapus. <b>Tombol link:</b> isi aksi <span class="mono">url</span> + kolom Target dengan linknya (mis. saluran WA, Telegram, website) — tombol link muncul di pesan "🔗 Link Penting" terpisah. Target kosong = tombol disembunyikan. Perhatian: WhatsApp maks <b>3 tombol balasan</b> dan <b>3 tombol link</b> per pesan — panel memperingatkan kalau melebihi.</p>
       <p class="muted"><b>Sinkron per tombol:</b> Platform <b>both</b> = tombol tampil di WhatsApp &amp; Telegram (sinkron). Pilih <b>whatsapp</b> / <b>telegram</b> kalau tombol itu hanya untuk satu channel. Filter di bawah untuk melihat tombol per channel.</p>
       <div class="flex"><button class="btn" onclick="newButton()">+ Tambah Tombol</button><button class="btn ghost" onclick="loadButtons()">↻ Muat ulang</button>
         <select id="btnFilter" onchange="loadButtons()" style="max-width:220px"><option value="all">Semua channel</option><option value="whatsapp">WhatsApp saja</option><option value="telegram">Telegram saja</option></select>
@@ -264,9 +268,9 @@
   <section id="tab-teks">
     <div class="card">
       <h2><span class="dot" style="background:linear-gradient(135deg,#7c3aed,#db2777)"></span>Teks &amp; Menu</h2>
-      <p class="muted">Ubah teks bubble/chat bot (Menu, Sapaan pertama, Bantuan, Memproses pembayaran) tanpa ubah kode. Tiap item bisa <b>sinkron</b> (satu teks untuk WhatsApp &amp; Telegram) atau <b>beda per channel</b> — atur lewat centang di tiap kartu.</p>
+      <p class="muted">Ubah teks bubble/chat bot (Menu, Sapaan pertama, Bantuan, Terminologi, Kebutuhan Sosmed, Riwayat Pesanan, Konfirmasi beli, Catatan, Memproses pembayaran) tanpa ubah kode. Tiap item bisa <b>sinkron</b> (satu teks untuk WhatsApp &amp; Telegram) atau <b>beda per channel</b> — atur lewat centang di tiap kartu.</p>
       <p class="muted"><b>Yang selalu sinkron (tidak ada di sini):</b> Produk &amp; Cek Pesanan — keduanya dibaca dari data yang sama di kedua channel, jadi katalog, harga, dan status pesanan tidak akan pernah beda antara WA dan Telegram.</p>
-      <p class="muted">Placeholder yang didukung di Menu &amp; Sapaan: <span class="mono">{{nama}}</span> = nama pembeli. Teks yang dikosongkan = kembali ke teks bawaan bot. Perubahan langsung dipakai bot (tanpa restart) karena dibaca dari database tiap pesan.</p>
+      <p class="muted">Placeholder yang didukung di Menu &amp; Sapaan: <span class="mono">{{nama}}</span> = nama pembeli, <span class="mono">{{username}}</span> = @username Telegram (atau nama depan), <span class="mono">{{saldo}}</span> = saldo dompet (Telegram). Di Bantuan: <span class="mono">{{admin}}</span> = nomor admin, <span class="mono">{{admin_link}}</span> = wa.me, <span class="mono">{{admin_tg}}</span> = @username Telegram admin, <span class="mono">{{admin_tg_link}}</span> = t.me. Teks yang dikosongkan = kembali ke teks bawaan bot. Perubahan langsung dipakai bot (tanpa restart) karena dibaca dari database tiap pesan.</p>
       <div class="flex"><button class="btn ghost" onclick="loadChannelTexts()">↻ Muat ulang</button></div>
       <div id="channelTexts"><p class="muted">Memuat…</p></div>
     </div>
@@ -486,6 +490,17 @@ async function loadProducts(){
           <div class="flex" style="margin-top:6px"><button class="btn sm" onclick="saveProductTemplate(${p.id})">💾 Simpan Template Produk</button></div>
           <p class="muted">Placeholder: {{email}} {{password}} {{username}} {{kode}} {{link}} {{pin}} {{nama_produk}} {{durasi}} {{panel_url}} {{server_name}} {{ram}} {{disk}}. Kosongkan untuk memakai template bawaan.</p>
         </details>
+        <div class="flex" style="margin-top:6px;align-items:center">
+          <label style="display:flex;gap:6px;align-items:center">Kategori
+            <select data-cat="${p.id}" style="width:auto">
+              <option value="digital" ${p.category==='digital'?'selected':''}>digital</option>
+              <option value="smm" ${p.category==='smm'?'selected':''}>smm (Kebutuhan Sosmed)</option>
+              <option value="panel" ${p.category==='panel'?'selected':''}>panel</option>
+              <option value="topup" ${p.category==='topup'?'selected':''}>topup</option>
+            </select></label>
+          <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" style="width:auto" data-notereq="${p.id}" ${p.note_required?'checked':''}> Catatan wajib (mis. produk invite — pembeli wajib isi email)</label>
+          <button class="btn sm" onclick="saveProductSettings(${p.id})">💾 Simpan</button>
+        </div>
         ${(p.variants||[]).length && (p.variants||[]).every(v=>v.stock_type!=='otomatis') ? `<p class="muted" style="font-size:12px">🔧 Produk ini diproses manual / supplier — tidak ada stok otomatis yang bisa diisi.</p>`:''}
         ${(p.variants||[]).map(v=>`
           <div style="border-top:1px solid var(--border);padding:8px 0">
@@ -622,7 +637,7 @@ async function loadOrders(){
     hideTokenBanner();
     document.getElementById('orders').innerHTML = list.length
       ? '<table><tr><th>Kode</th><th>Produk</th><th>Pembeli</th><th>Total</th><th>Status</th><th>Aksi</th></tr>'+list.map(o=>`<tr>
-        <td class="mono">${esc(o.code)}</td><td>${esc(o.product_name)} — ${esc(o.variant_name)}<br><span class="muted">${esc(o.channel)} · ${esc(o.supplier||'')}</span></td>
+        <td class="mono">${esc(o.code)}</td><td>${esc(o.product_name)} — ${esc(o.variant_name)}<br><span class="muted">${esc(o.channel)} · ${esc(o.supplier||'')}</span>${o.notes?`<br><span class="muted">📝 ${esc(o.notes)}</span>`:''}</td>
         <td>${esc(o.buyer_name||'')} <span class="muted">${esc(o.buyer_contact||'')}</span></td><td>${rupiah(o.total)}</td>
         <td><span class="badge">${esc(o.status)}</span></td>
         <td><button class="btn sm" onclick="orderDetail('${esc(o.code)}')">Detail</button>
@@ -635,7 +650,7 @@ async function loadOrders(){
 async function orderDetail(code){
   try{
     const o = await api('/orders/'+encodeURIComponent(code));
-    const note = prompt(`Pesanan ${o.code}\nStatus: ${o.status}\nProduk: ${o.product_name} — ${o.variant_name}\nTotal: ${rupiah(o.total)}\nSupplier order: ${o.supplier_order_id||'-'}\n\nTulis catatan / ubah status? Kosongkan untuk batal.\nStatus baru (waiting_payment/paid/delivered/completed/complaint/cancelled) — ketik di bawah, atau ketik DELIVER:isi untuk tandai terkirim.`, '');
+    const note = prompt(`Pesanan ${o.code}\nStatus: ${o.status}\nProduk: ${o.product_name} — ${o.variant_name}\nTotal: ${rupiah(o.total)}\nSupplier order: ${o.supplier_order_id||'-'}\nCatatan pembeli: ${o.notes||'-'}\n\nTulis catatan / ubah status? Kosongkan untuk batal.\nStatus baru (waiting_payment/paid/delivered/completed/complaint/cancelled) — ketik di bawah, atau ketik DELIVER:isi untuk tandai terkirim.`, '');
     if(note===null||!note) return;
     if(note.startsWith('DELIVER:')){
       await api('/orders/'+encodeURIComponent(code)+'/deliver',{method:'POST',body:JSON.stringify({delivered_item:note.slice(8)})});
@@ -765,7 +780,15 @@ async function saveChannelText(key){
   }
   try{ await api('/channel-texts/'+encodeURIComponent(key),{method:'PUT',body:JSON.stringify(body)}); toast('Teks disimpan — langsung dipakai bot.'); loadChannelTexts(); }catch(e){ toast(e.message); }
 }
-// Template pengiriman per produk (panel > Produk)
+// Pengaturan produk (panel > Produk): kategori + catatan wajib.
+// Kategori 'smm' = produk tampil di menu Kebutuhan Sosmed, bukan Katalog.
+// Catatan wajib = buyer TIDAK bisa Skip catatan (mis. produk invite yang
+// butuh email buyer); berlaku sama di WA & Telegram (pengaturan produk sinkron).
+async function saveProductSettings(id){
+  const cat = document.querySelector(`[data-cat="${id}"]`);
+  const nr = document.querySelector(`[data-notereq="${id}"]`);
+  try{ await api('/products/'+id,{method:'PUT',body:JSON.stringify({category: cat?cat.value:undefined, note_required: nr?!!nr.checked:undefined})}); toast('Pengaturan produk disimpan.'); loadProducts(); }catch(e){ toast(e.message); }
+}
 async function saveProductTemplate(id){
   const ta = document.querySelector(`[data-ptpl="${id}"]`);
   if(!ta) return;
@@ -773,7 +796,7 @@ async function saveProductTemplate(id){
 }
 async function newButton(){
   const label = prompt('Label tombol (contoh: Promo Hari Ini):'); if(!label) return;
-  const action = prompt('Aksi — pilih salah satu:\nmenu_katalog / menu_cek_pesanan / menu_bantuan / menu_utama / beli_sekarang / batal\natau ketik "url" untuk tombol link:','menu_katalog'); if(!action) return;
+  const action = prompt('Aksi — pilih salah satu:\nmenu_katalog / menu_cek_pesanan / menu_bantuan / menu_sosmed / menu_riwayat / menu_terminologi / menu_topup / menu_utama / beli_sekarang / batal\natau ketik "url" untuk tombol link:','menu_katalog'); if(!action) return;
   let target = '';
   if(action.trim()==='url') { target = prompt('Link tujuannya (contoh: https://okta-anggara.my.id):','https://'); if(target===null) return; }
   const platform = prompt('Platform (both / whatsapp / telegram):','both')||'both';
@@ -782,7 +805,7 @@ async function newButton(){
 async function editButton(id){
   const b = (window._buttons||[]).find(x=>x.id===id); if(!b) return;
   const label = prompt('Label tombol:', b.label); if(label===null) return;
-  const action = prompt('Aksi (menu_katalog / menu_cek_pesanan / menu_bantuan / menu_utama / beli_sekarang / batal / url):', b.action); if(action===null) return;
+  const action = prompt('Aksi (menu_katalog / menu_cek_pesanan / menu_bantuan / menu_sosmed / menu_riwayat / menu_terminologi / menu_topup / menu_utama / beli_sekarang / batal / url):', b.action); if(action===null) return;
   let target = b.target||'';
   if(action.trim()==='url') { target = prompt('Link tujuannya:', target||'https://'); if(target===null) return; }
   const platform = prompt('Platform (both / whatsapp / telegram):', b.platform); if(platform===null) return;
@@ -807,6 +830,7 @@ const INT_KEYS = [
   {key:'wa_phone_number',label:'Nomor WhatsApp Bot (KEDUA, format 628xxx tanpa +)',secret:false},
   {key:'owner_phone',label:'Nomor Owner / Admin (format 628xxx tanpa +, untuk perintah & notif via WA)',secret:false},
   {key:'owner_lid',label:'Owner LID (angka @lid, isi kalau pesan owner masuk sebagai @lid — lihat bot.log)',secret:false},
+  {key:'admin_telegram',label:'Username Telegram Admin (tanpa @, contoh: blukutuk3x — ditampilkan di Bantuan)',secret:false},
   {key:'telegram_bot_token',label:'Telegram Bot Token (BotFather)',secret:true},
   {key:'nexapayz_api_key',label:'NexaPayz API Key',secret:true},
   {key:'nexapayz_webhook_secret',label:'NexaPayz Webhook Secret',secret:true},
@@ -818,6 +842,8 @@ const INT_KEYS = [
   {key:'turso_auth_token',label:'Turso Auth Token (dibuat di dashboard Turso)',secret:true},
   {key:'lollipop_api_key',label:'Lollipop SMM API Key',secret:true},
   {key:'lollipop_api_url',label:'Lollipop API URL',secret:false},
+  {key:'buzzerpanel_api_key',label:'BuzzerPanel SMM API Key',secret:true},
+  {key:'buzzerpanel_api_url',label:'BuzzerPanel API URL (default: https://buzzerpanel.id/api/v2)',secret:false},
   {key:'lhie_api_key',label:'Lhie Store API Key (Bearer)',secret:true},
   {key:'lhie_base_url',label:'Lhie Base URL',secret:false},
   {key:'buymail_api_key',label:'BuyMail Simuru API Key',secret:true},
