@@ -165,7 +165,7 @@
       <p class="muted" id="checklist">Memuat…</p>
       <ol style="font-size:14px">
         <li>Isi semua API key di tab <b>Integrasi</b> (jangan kirim lewat chat).</li>
-        <li>Isi stok produk OTOMATIS &amp; aktifkan produk yang mau dijual.</li>
+        <li>Isi stok produk OTOMATIS &amp; MANUAL &amp; aktifkan produk yang mau dijual.</li>
         <li>Pilih produk Lhie / Fireflazz di tab <b>Supplier</b> (default OFF).</li>
         <li>Test order Rp10.000 via NexaPayz, bayar sendiri, cek barang terkirim.</li>
         <li>Test withdraw Rp10.000 ke DANA.</li>
@@ -178,12 +178,21 @@
   <section id="tab-produk">
     <div class="card">
       <h2><span class="dot" style="background:linear-gradient(135deg,#db2777,#f472b6)"></span>Produk &amp; Varian</h2>
-      <p class="muted">Struktur: Daftar Produk Digital → nama aplikasi (CapCut, Alight Motion, …) → varian (Private 7d, Private 30d, Sharing 7d, …). Tiap varian punya harga, durasi, tipe, dan template pengiriman sendiri. <b>Template pengiriman per produk</b> juga bisa diisi di tiap kartu produk di bawah — dipakai kalau variannya tidak punya template sendiri. Prioritas saat pengiriman: <b>template varian → template produk → template bawaan</b>.</p>
+      <p class="muted">Katalog bot sekarang <b>pemilih grup</b> (Premium App / Kebutuhan Sosmed / Top up Game) — produk di bawah ini dikelompokkan <b>per supplier</b> (filter di atas daftar). Tiap produk punya varian (Private 7d, Private 30d, …) dengan harga, durasi, tipe, dan template pengiriman sendiri. <b>Template pengiriman per produk</b> juga bisa diisi di tiap kartu produk di bawah — dipakai kalau variannya tidak punya template sendiri. Prioritas saat pengiriman: <b>template varian → template produk → template bawaan</b>. ⚠️ Produk supplier <b>tidak bisa diaktifkan</b> kalau API key supplier-nya belum diisi (lihat peringatan di kartu produk) — isi key di tab Integrasi.</p>
+      <p class="muted"><b>Tampilan per channel:</b> saklar di bawah mengganti daftar produk antara <b>WhatsApp</b> dan <b>Telegram</b> — deskripsi, action word WA, dan label tombol TG tampil sesuai channelnya. Yang <b>tetap sama</b> di kedua channel: harga, manual/otomatis, catatan wajib, dan <b>stok</b>. <b>Stok dikelola di bagian 📦 Stok di bawah daftar</b> (satu sumber per varian, dipakai WA &amp; TG); kartu produk hanya menampilkan hitungan "Tersedia" yang sama.</p>
       <div class="flex">
         <button class="btn" onclick="newProduct()">+ Tambah Produk</button>
         <button class="btn ghost" onclick="loadProducts()">↻ Muat ulang</button>
+        <span class="muted" style="align-self:center">Tampilan:</span>
+        <button class="btn sm" id="chWaBtn" onclick="setProdChannel('whatsapp')">📱 WhatsApp</button>
+        <button class="btn sm ghost" id="chTgBtn" onclick="setProdChannel('telegram')">✈️ Telegram</button>
       </div>
       <div id="products"><p class="muted">Memuat…</p></div>
+    </div>
+    <div class="card" id="stockCard">
+      <h2><span class="dot" style="background:linear-gradient(135deg,#0ea5e9,#22d3ee)"></span>📦 Stok — satu sumber per varian</h2>
+      <p class="muted">Stok (<b>stock_items</b>) tetap <b>SATU pool bersama per varian</b> untuk WhatsApp &amp; Telegram — tidak ada stok per channel. Order dari WA maupun TG mengambil dari stok varian yang sama, dan hitungan "Tersedia" di kartu produk WA/TG selalu sama dengan di sini. Isi stok <b>hanya di bagian ini</b> (jangan duplikasi di kartu produk) supaya jumlah &amp; isinya tidak pernah beda antar tampilan.</p>
+      <div id="stockSection"><p class="muted">Memuat…</p></div>
     </div>
     <div class="card">
       <h3>Template pengiriman — preview</h3>
@@ -227,14 +236,16 @@
   <section id="tab-supplier">
     <div class="card">
       <h2><span class="dot" style="background:linear-gradient(135deg,#d97706,#f59e0b)"></span>Supplier — pilih produk yang dijual</h2>
-      <p class="muted">Semua produk supplier default <b>OFF</b>. Anggara aktifkan sendiri yang dipilih saja. Harga jual = harga supplier + markup (isi di kolom Harga Jual). Tombol <b>Jual ▶</b> memasukkan produk ke katalog WA/Telegram dengan nama aslinya dari Lhie (mis. Muse Ai 1b Token) — nama &amp; kode bisa diubah di tab Produk, stok ngikut Lhie. <b>SMM (Lollipop / BuzzerPanel):</b> Harga Jual yang diisi = harga <b>per 100</b> (rate supplier adalah per 1000); produk yang dipublish masuk kategori <b>smm</b> dan tampil di menu Kebutuhan Sosmed.</p>
+      <p class="muted">Semua produk supplier default <b>OFF</b>. Anggara aktifkan sendiri yang dipilih saja. Harga jual = harga supplier + markup (isi di kolom Harga Jual). Tombol <b>Jual ▶</b> memasukkan produk ke katalog WA/Telegram dengan <b>nama produknya saja</b> (tanpa nama penyedia) — nama &amp; kode bisa diubah di tab Produk, stok ngikut Lhie. <b>SMM (Lollipop / BuzzerPanel):</b> Harga Jual yang diisi = harga <b>per 100</b> (rate supplier adalah per 1000); produk yang dipublish masuk kategori <b>smm</b> dan tampil di grup Kebutuhan Sosmed di dalam Katalog. <b>Fireflazz:</b> produk yang dipublish masuk kategori <b>topup</b> (grup Top up Game di Katalog), Harga Jual <b>wajib diisi</b> — Fireflazz sistem <b>komisi</b>, tidak ada deposit.</p>
       <div class="flex">
         <button class="btn" onclick="syncSupplier('lhie')">↻ Sync Katalog Lhie</button>
         <button class="btn" onclick="syncSupplier('lollipop')">↻ Sync Layanan Lollipop</button>
         <button class="btn" onclick="syncSupplier('buzzerpanel')">↻ Sync Layanan BuzzerPanel</button>
+        <button class="btn" onclick="syncSupplier('fireflazz')">↻ Sync Produk Fireflazz</button>
         <button class="btn ghost" onclick="loadSupplier('lhie')">Lihat Lhie</button>
         <button class="btn ghost" onclick="loadSupplier('lollipop')">Lihat Lollipop</button>
         <button class="btn ghost" onclick="loadSupplier('buzzerpanel')">Lihat BuzzerPanel</button>
+        <button class="btn ghost" onclick="loadSupplier('fireflazz')">Lihat Fireflazz</button>
       </div>
       <div id="supplierList"><p class="muted">Memuat…</p></div>
     </div>
@@ -245,7 +256,7 @@
         <li><b>Lollipop:</b> SMM (Perfect Panel API v2). Rate supplier per 1000; harga jual di panel adalah per 100. Produk yang dipublish masuk menu Kebutuhan Sosmed (kategori smm).</li>
         <li><b>BuzzerPanel:</b> SMM kedua (Perfect Panel API v2, https://buzzerpanel.id/api/v2). Sama seperti Lollipop — rate per 1000, harga jual per 100, publish ke kategori smm. API key diisi di tab Integrasi.</li>
         <li><b>BuyMail:</b> Gmail, modal contoh Rp4.800/akun, live-check 10–30 detik, refund maks 2 jam (screenshot HP). API terbuka setelah total deposit Rp100.000.</li>
-        <li><b>Fireflazz:</b> top-up game H2H, deposit pertama min Rp100.000 QRIS, gagal = saldo kembali. Toko Anggara: <span class="mono">anggaratopup.fireflazz.com</span> (saldo Rp0 saat dicek 24 Nov 2026). Detail endpoint H2H ada di dashboard Fireflazz — samakan di kode sebelum jualan.</li>
+        <li><b>Fireflazz:</b> top-up game H2H, sistem <b>KOMISI</b> — tidak ada deposit yang harus diisi (tidak ada tombol deposit di Fireflazz). Toko Anggara: <span class="mono">anggaratopup.fireflazz.com</span>. Detail endpoint H2H ada di dashboard Fireflazz — samakan di kode sebelum jualan.</li>
         <li><b>Pterodactyl:</b> jual panel, bot create user + server otomatis. Server habis masa aktif di-suspend (tidak dihapus).</li>
       </ul>
     </div>
@@ -255,11 +266,13 @@
   <section id="tab-tombol">
     <div class="card">
       <h2><span class="dot" style="background:linear-gradient(135deg,#059669,#10b981)"></span>Manajemen Tombol</h2>
-      <p class="muted">Tombol default (Katalog, Cek Pesanan, Bantuan, Kebutuhan Sosmed, Riwayat Pesanan, Terminologi, Top-up, Beli Sekarang, Kembali, Ya Bayar, Batal) <b>tidak bisa dihapus</b> — hanya bisa diedit / disembunyikan / diurutkan. Tombol tambahan bisa dihapus. <b>Tombol link:</b> isi aksi <span class="mono">url</span> + kolom Target dengan linknya (mis. saluran WA, Telegram, website) — tombol link muncul di pesan "🔗 Link Penting" terpisah. Target kosong = tombol disembunyikan. Perhatian: WhatsApp maks <b>3 tombol balasan</b> dan <b>3 tombol link</b> per pesan — panel memperingatkan kalau melebihi.</p>
+      <p class="muted"><b>Menu utama WA bernomor digenerate dari tombol di sini</b> (yang <b>Tampil di: Menu Utama</b>, urut nomor kecil ke besar) — tambah tombol baru, langsung jadi nomor baru di menu bot. Tombol bisa dipicu buyer lewat <b>nomor menu</b>, <b>ketuk tombol</b>, atau <b>ketik labelnya</b>. <b>Aksi <span class="mono">text</span>:</b> ketuk tombol → bot kirim <b>isi pesan</b> yang diisi di form (mis. info promo, jam buka). <b>Aksi <span class="mono">url</span>:</b> tombol link — isi kolom Target dengan linknya. <b>Tampil di:</b> Menu Utama / Katalog (pemilih grup) / Tagihan (pesan QRIS) / Setelah Bayar (pesan sukses) / Tidak tampil. Tombol default (Katalog, Cek Pesanan, Bantuan, Riwayat Pesanan, Terminologi, Top-up, Beli Sekarang, Kembali, Ya Bayar, Batal) <b>tidak bisa dihapus</b> — labelnya tetap bisa diubah lewat Edit, dan tombol bisa disembunyikan. Tombol tambahan bisa dihapus. Perhatian: WhatsApp maks <b>3 tombol balasan</b> dan <b>3 tombol link</b> per pesan — panel memperingatkan kalau melebihi.</p>
       <p class="muted"><b>Sinkron per tombol:</b> Platform <b>both</b> = tombol tampil di WhatsApp &amp; Telegram (sinkron). Pilih <b>whatsapp</b> / <b>telegram</b> kalau tombol itu hanya untuk satu channel. Filter di bawah untuk melihat tombol per channel.</p>
       <div class="flex"><button class="btn" onclick="newButton()">+ Tambah Tombol</button><button class="btn ghost" onclick="loadButtons()">↻ Muat ulang</button>
         <select id="btnFilter" onchange="loadButtons()" style="max-width:220px"><option value="all">Semua channel</option><option value="whatsapp">WhatsApp saja</option><option value="telegram">Telegram saja</option></select>
+        <select id="btnShowAt" onchange="loadButtons()" style="max-width:220px"><option value="all">Semua lokasi tampil</option><option value="menu">Menu Utama</option><option value="katalog">Katalog</option><option value="tagihan">Tagihan</option><option value="setelah_bayar">Setelah Bayar</option><option value="none">Tidak tampil</option></select>
       </div>
+      <div id="buttonForm"></div>
       <div id="buttons"><p class="muted">Memuat…</p></div>
     </div>
   </section>
@@ -268,9 +281,9 @@
   <section id="tab-teks">
     <div class="card">
       <h2><span class="dot" style="background:linear-gradient(135deg,#7c3aed,#db2777)"></span>Teks &amp; Menu</h2>
-      <p class="muted">Ubah teks bubble/chat bot (Menu, Sapaan pertama, Bantuan, Terminologi, Kebutuhan Sosmed, Riwayat Pesanan, Konfirmasi beli, Catatan, Memproses pembayaran) tanpa ubah kode. Tiap item bisa <b>sinkron</b> (satu teks untuk WhatsApp &amp; Telegram) atau <b>beda per channel</b> — atur lewat centang di tiap kartu.</p>
+      <p class="muted">Ubah teks bubble/chat bot (Menu, Sapaan pertama, Bantuan, Terminologi, Katalog — pemilih grup, Kebutuhan Sosmed, Top up Game, Riwayat Pesanan, Konfirmasi beli, Catatan, Memproses pembayaran) tanpa ubah kode. Tiap item bisa <b>sinkron</b> (satu teks untuk WhatsApp &amp; Telegram) atau <b>beda per channel</b> — atur lewat centang di tiap kartu.</p>
       <p class="muted"><b>Yang selalu sinkron (tidak ada di sini):</b> Produk &amp; Cek Pesanan — keduanya dibaca dari data yang sama di kedua channel, jadi katalog, harga, dan status pesanan tidak akan pernah beda antara WA dan Telegram.</p>
-      <p class="muted">Placeholder yang didukung di Menu &amp; Sapaan: <span class="mono">{{nama}}</span> = nama pembeli, <span class="mono">{{username}}</span> = @username Telegram (atau nama depan), <span class="mono">{{saldo}}</span> = saldo dompet (Telegram). Di Bantuan: <span class="mono">{{admin}}</span> = nomor admin, <span class="mono">{{admin_link}}</span> = wa.me, <span class="mono">{{admin_tg}}</span> = @username Telegram admin, <span class="mono">{{admin_tg_link}}</span> = t.me. Teks yang dikosongkan = kembali ke teks bawaan bot. Perubahan langsung dipakai bot (tanpa restart) karena dibaca dari database tiap pesan.</p>
+      <p class="muted">Placeholder yang didukung di Menu &amp; Sapaan: <span class="mono">{{nama}}</span> = nama pembeli, <span class="mono">{{username}}</span> = @username Telegram (atau nama depan), <span class="mono">{{saldo}}</span> = saldo dompet (Telegram). Di Menu WhatsApp, <span class="mono">{{menu}}</span> = daftar menu bernomor yang <b>digenerate otomatis dari tabel Tombol</b> (show_at = Menu Utama) — tulis {{menu}} di posisi daftarnya; kalau tidak ditulis, daftar ditempel di akhir teks. Di Bantuan: <span class="mono">{{admin}}</span> = nomor admin, <span class="mono">{{admin_link}}</span> = wa.me, <span class="mono">{{admin_tg}}</span> = @username Telegram admin, <span class="mono">{{admin_tg_link}}</span> = t.me. Teks yang dikosongkan = kembali ke teks bawaan bot. Perubahan langsung dipakai bot (tanpa restart) karena dibaca dari database tiap pesan.</p>
       <div class="flex"><button class="btn ghost" onclick="loadChannelTexts()">↻ Muat ulang</button></div>
       <div id="channelTexts"><p class="muted">Memuat…</p></div>
     </div>
@@ -474,85 +487,226 @@ async function loadDashboard(){
 }
 function authErrorHtmlOr(e){ return e.message==='UNAUTHORIZED' ? authErrorHtml() : '<div class="err">❌ Gagal memuat: '+esc(e.message)+'</div>'; }
 // Produk
+// Produk — satu daftar, dua tampilan channel (WA / Telegram) + Stok terpisah.
+// Saklar channel di atas daftar (setProdChannel). Kartu produk menampilkan
+// deskripsi + field channel yang aktif; varian menampilkan action word (WA)
+// atau label tombol (TG). STOK TIDAK ADA di kartu — stok dikelola di bagian
+// "📦 Stok" di bawah daftar (satu sumber per varian, dipakai WA & TG);
+// kartu hanya menampilkan hitungan "Tersedia" yang sama (data-stockcount).
+function setProdChannel(ch){ window._prodChannel = (ch === 'telegram') ? 'telegram' : 'whatsapp'; loadProducts(); }
 async function loadProducts(){
   try{
     const list = await api('/products');
     hideTokenBanner();
-    document.getElementById('products').innerHTML = list.map(p=>`
+    // Status key per supplier (untuk peringatan di kartu produk).
+    let keyStatus = {};
+    try{
+      const ks = await api('/supplier-keys');
+      keyStatus = Object.fromEntries((ks||[]).map(k=>[k.supplier, k]));
+    }catch(e){ /* abaikan — panel lama / endpoint belum ada */ }
+    window._supplierKeys = keyStatus;
+    window._products = list;
+    const channel = window._prodChannel || 'whatsapp';
+    const wab = document.getElementById('chWaBtn'), tgb = document.getElementById('chTgBtn');
+    if (wab) wab.classList.toggle('ghost', channel !== 'whatsapp');
+    if (tgb) tgb.classList.toggle('ghost', channel !== 'telegram');
+    const filter = window._supplierFilter || 'all';
+    const shown = filter==='all' ? list : list.filter(p=>p.supplier===filter);
+    const SUPPLIER_LABELS = { manual:'Manual (stok sendiri)', fireflazz:'Fireflazz (top-up game)', buymail:'BuyMail (Gmail)', lhie:'Lhie', lollipop:'Lollipop (SMM)', buzzerpanel:'BuzzerPanel (SMM)', pterodactyl:'Panel Server Game' };
+    const SUPPLIER_ORDER = ['manual','fireflazz','buymail','lhie','lollipop','buzzerpanel','pterodactyl'];
+    const groups = {};
+    for(const p of shown){ const g = p.supplier||'manual'; (groups[g]=groups[g]||[]).push(p); }
+    const groupKeys = Object.keys(groups).sort((a,b)=>{
+      const ia = SUPPLIER_ORDER.indexOf(a), ib = SUPPLIER_ORDER.indexOf(b);
+      return (ia===-1?99:ia)-(ib===-1?99:ib) || a.localeCompare(b);
+    });
+    const chips = ['all',...SUPPLIER_ORDER].map(s2=>{
+      const label = s2==='all' ? 'Semua' : (SUPPLIER_LABELS[s2]||s2);
+      const n = s2==='all' ? list.length : list.filter(p=>p.supplier===s2).length;
+      return `<button class="btn sm ${filter===s2?'':'ghost'}" onclick="setSupplierFilter('${s2}')">${esc(label)} (${n})</button>`;
+    }).join('');
+    const effDesc = (p)=> channel==='telegram' ? (p.description_tg||p.description||'') : (p.description_wa||p.description||'');
+    const cardHtml = (p)=>{
+      const ks = keyStatus[p.supplier];
+      const keyWarn = (p.supplier && p.supplier!=='manual' && ks && !ks.filled)
+        ? `<p class="note" style="font-size:12px">⚠️ ${(ks.missing||[]).join(', ')} belum diisi — produk ini <b>tidak bisa diaktifkan</b>. Isi di tab Integrasi.</p>` : '';
+      const desc = effDesc(p);
+      return `
       <div class="card plain" style="box-shadow:none">
         <div class="flex"><b>${esc(p.name)}</b><span class="badge mono">${esc(p.code||'')}</span><span class="badge blue">${esc(p.app||'')}</span><span class="badge pink">${esc(p.type)}</span><span class="badge cyan">${esc(p.supplier)}</span><span class="badge ${p.enabled?'ok':'warn'}">${p.enabled?'Aktif':'Nonaktif'}</span>
         <button class="btn sm ghost" onclick="toggleProduct(${p.id},${p.enabled?0:1})">${p.enabled?'Nonaktifkan':'Aktifkan'}</button>
         <button class="btn sm ghost" onclick="editProduct(${p.id})">Edit</button>
         <button class="btn sm danger" onclick="deleteProduct(${p.id})">Hapus</button></div>
-        <p class="muted">${esc(p.description||'')}</p>
+        ${keyWarn}
+        ${desc?`<p class="muted">${channel==='telegram'?'✈️ Deskripsi Telegram':'📱 Deskripsi WhatsApp'}: ${esc(desc)}</p>`:''}
         <details><summary style="font-size:12px;color:var(--muted)">📝 Template pengiriman produk (dipakai kalau varian tidak punya template sendiri)</summary>
           <textarea data-ptpl="${p.id}" placeholder="Contoh:&#10;📧 Email: {{email}}&#10;🔑 Password: {{password}}">${esc(p.delivery_template||'')}</textarea>
           <div class="flex" style="margin-top:6px"><button class="btn sm" onclick="saveProductTemplate(${p.id})">💾 Simpan Template Produk</button></div>
           <p class="muted">Placeholder: {{email}} {{password}} {{username}} {{kode}} {{link}} {{pin}} {{nama_produk}} {{durasi}} {{panel_url}} {{server_name}} {{ram}} {{disk}}. Kosongkan untuk memakai template bawaan.</p>
         </details>
-        <div class="flex" style="margin-top:6px;align-items:center">
-          <label style="display:flex;gap:6px;align-items:center">Kategori
-            <select data-cat="${p.id}" style="width:auto">
-              <option value="digital" ${p.category==='digital'?'selected':''}>digital</option>
-              <option value="smm" ${p.category==='smm'?'selected':''}>smm (Kebutuhan Sosmed)</option>
-              <option value="panel" ${p.category==='panel'?'selected':''}>panel</option>
-              <option value="topup" ${p.category==='topup'?'selected':''}>topup</option>
-            </select></label>
-          <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" style="width:auto" data-notereq="${p.id}" ${p.note_required?'checked':''}> Catatan wajib (mis. produk invite — pembeli wajib isi email)</label>
-          <button class="btn sm" onclick="saveProductSettings(${p.id})">💾 Simpan</button>
-        </div>
-        ${(p.variants||[]).length && (p.variants||[]).every(v=>v.stock_type!=='otomatis') ? `<p class="muted" style="font-size:12px">🔧 Produk ini diproses manual / supplier — tidak ada stok otomatis yang bisa diisi.</p>`:''}
-        ${(p.variants||[]).map(v=>`
+        <div data-pform="${p.id}"></div>
+        ${(p.variants||[]).length && (p.variants||[]).every(v=>v.stock_type!=='otomatis' && v.stock_type!=='manual') ? `<p class="muted" style="font-size:12px">🔧 Produk ini diproses supplier — tidak ada stok yang bisa diisi di panel.</p>`:''}
+        ${(p.variants||[]).map(v=>{
+          const stockable = v.stock_type==='otomatis'||v.stock_type==='manual';
+          const chLine = channel==='telegram'
+            ? `🔘 Tombol TG: "${esc((v.label_tg||'').trim()||v.name)}"${v.description_tg?` — ${esc(v.description_tg)}`:''}`
+            : `⌨️ Action word WA: ${v.action_word?`"${esc(v.action_word)}"`:'(pakai kode varian)'}${v.description_wa?` — ${esc(v.description_wa)}`:''}`;
+          return `
           <div style="border-top:1px solid var(--border);padding:8px 0">
             <div class="flex"><b>${esc(v.name)}</b><span class="badge mono">${esc(v.code||'')}</span><span>${rupiah(v.price)}</span><span class="badge">${esc(v.duration||'-')}</span><span class="badge">${esc(v.kind||'-')}</span><span class="badge">${esc(v.stock_type)}</span><span class="badge ${v.enabled?'ok':'warn'}">${v.enabled?'Aktif':'Nonaktif'}</span>
-            ${v.stock_type==='otomatis'?`<span class="badge ${((v.stock_available??0)>0)?'ok':'warn'}">Stok: ${v.stock_available??0}</span>`:''}
+            ${stockable?`<span class="badge ${((v.stock_available??0)>0)?'ok':'warn'}">Stok: <b data-stockcount="${v.id}">${v.stock_available??0}</b></span>`:''}
             <button class="btn sm ghost" onclick="toggleVariant(${v.id},${v.enabled?0:1})">${v.enabled?'Nonaktifkan':'Aktifkan'}</button>
             <button class="btn sm ghost" onclick="editVariant(${v.id})">Edit</button>
-            <button class="btn sm ghost" onclick="addStock(${v.id})">+ Stok</button></div>
+            ${stockable?`<button class="btn sm ghost" onclick="scrollToStock(${v.id})">📦 Stok</button>`:''}</div>
+            <p class="muted" style="font-size:12px;margin:4px 0 0">${chLine}</p>
+            <div data-vform="${v.id}"></div>
             ${v.delivery_template?`<details><summary style="font-size:12px;color:var(--muted)">Template pengiriman</summary><pre class="mono" style="white-space:pre-wrap">${esc(v.delivery_template)}</pre></details>`:''}
-            ${v.stock_type==='otomatis'?`
-            <details data-stock="${v.id}" ontoggle="if(this.open) loadVariantStock(${v.id}, true)">
-              <summary style="font-size:12px;color:var(--muted)">📦 Database Stok — Tersedia: <b data-stockcount="${v.id}">${v.stock_available??0}</b> <span class="muted">(klik untuk lihat / tambah stok)</span></summary>
-              <div data-stockbox="${v.id}"><p class="muted">Klik "Muat / Refresh Stok" untuk melihat isi stok.</p></div>
-              <div class="flex" style="margin-top:6px">
-                <input data-se="${v.id}" placeholder="Email" style="flex:2" autocomplete="off">
-                <input data-sp="${v.id}" placeholder="Password" style="flex:2" autocomplete="off">
-                <button class="btn sm" onclick="addStockForm(${v.id})">＋ Tambah Stok</button>
-              </div>
-              <div class="flex" style="margin-top:6px">
-                <input data-su="${v.id}" placeholder="Username (opsional)" autocomplete="off">
-                <input data-sk="${v.id}" placeholder="Kode (opsional)" autocomplete="off">
-                <input data-sl="${v.id}" placeholder="Link (opsional)" autocomplete="off">
-                <input data-spn="${v.id}" placeholder="PIN (opsional)" autocomplete="off">
-              </div>
-              <details><summary style="font-size:12px;color:var(--muted)">Tambah banyak sekaligus — satu akun per baris: email|password</summary>
-                <textarea data-sbulk="${v.id}" placeholder="akun1@mail.com|Pass123&#10;akun2@mail.com|Pass456"></textarea>
-                <div class="flex" style="margin-top:6px"><button class="btn sm" onclick="addStockBulk(${v.id})">＋ Tambah Banyak</button></div>
-                <p class="muted">Format per baris: email|password — boleh ditambah |username|kode|link|pin. Baris kosong atau tanpa email/password dilewati.</p>
-              </details>
-              <div class="flex" style="margin-top:6px"><button class="btn sm ghost" onclick="loadVariantStock(${v.id})">🔄 Muat / Refresh Stok</button></div>
-            </details>`:`
-            <p class="muted" style="font-size:12px">🔧 Manual — diproses owner, tidak pakai stok otomatis.</p>`}
-          </div>`).join('')}
+            ${stockable?'':`<p class="muted" style="font-size:12px">🔧 ${esc(v.stock_type)} — diproses supplier, tidak pakai stok.</p>`}
+          </div>`;
+        }).join('')}
         <button class="btn sm" onclick="newVariant(${p.id})">+ Tambah Varian</button>
-      </div>`).join('') || '<p class="muted">Belum ada produk.</p>';
-    window._products = list;
+      </div>`;
+    };
+    document.getElementById('products').innerHTML = `<div class="flex" style="flex-wrap:wrap;margin-bottom:10px">${chips}</div>` + (groupKeys.length ? groupKeys.map(g=>{
+      const ks = keyStatus[g];
+      const keyWarn = (g!=='manual' && ks && !ks.filled) ? ` <span class="badge warn">🔑 Key belum diisi — produk di grup ini tidak bisa diaktifkan (isi di tab Integrasi: ${esc((ks.missing||[]).join(', '))})</span>` : '';
+      return `<h3 style="margin:14px 0 6px">${esc(SUPPLIER_LABELS[g]||g)} — ${groups[g].length} produk${keyWarn}</h3>` + groups[g].map(cardHtml).join('');
+    }).join('') : '<p class="muted">Belum ada produk.</p>');
+    renderStockSection(list);
   }catch(e){ handleLoadError(e, 'products'); }
 }
+// Bagian Stok — TERPISAH dari kartu produk (WA & TG). Satu sumber stok per
+// varian (stock_items), satu tempat mengelola: di sini. Kedua tampilan produk
+// hanya menampilkan hitungan "Tersedia" yang sama; isi stok di sini langsung
+// tersinkron ke hitungan di kartu (semua elemen data-stockcount diupdate saat
+// tabel stok dimuat — tanpa render ulang, supaya fokus input cepat tidak hilang).
+function renderStockSection(list){
+  const box = document.getElementById('stockSection'); if(!box) return;
+  const SUPPLIER_LABELS = { manual:'Manual (stok sendiri)', fireflazz:'Fireflazz (top-up game)', buymail:'BuyMail (Gmail)', lhie:'Lhie', lollipop:'Lollipop (SMM)', buzzerpanel:'BuzzerPanel (SMM)', pterodactyl:'Panel Server Game' };
+  const SUPPLIER_ORDER = ['manual','fireflazz','buymail','lhie','lollipop','buzzerpanel','pterodactyl'];
+  const stockable = (list||[]).flatMap(p=>(p.variants||[]).filter(v=>v.stock_type==='otomatis'||v.stock_type==='manual').map(v=>({p, v})));
+  if(!stockable.length){ box.innerHTML = '<p class="muted">Belum ada varian yang pakai stok (otomatis/manual). Varian supplier diproses supplier, tidak pakai stok panel.</p>'; return; }
+  const byProd = {};
+  for(const {p, v} of stockable){ (byProd[p.id]=byProd[p.id]||{p, vs:[]}).vs.push(v); }
+  const prods = Object.values(byProd).sort((a,b)=>{
+    const ia = SUPPLIER_ORDER.indexOf(a.p.supplier||'manual'), ib = SUPPLIER_ORDER.indexOf(b.p.supplier||'manual');
+    return (ia===-1?99:ia)-(ib===-1?99:ib) || a.p.name.localeCompare(b.p.name);
+  });
+  box.innerHTML = prods.map(({p, vs})=>`
+    <h3 style="margin:14px 0 6px">${esc(p.name)} <span class="badge cyan">${esc(p.supplier)}</span></h3>` +
+    vs.map(v=>`
+    <div id="stok-${v.id}" style="border-top:1px solid var(--border);padding:8px 0">
+      <div class="flex"><b>${esc(v.name)}</b><span class="badge mono">${esc(v.code||'')}</span><span>${rupiah(v.price)}</span><span class="badge">${esc(v.stock_type)}</span><span class="badge ${((v.stock_available??0)>0)?'ok':'warn'}">Tersedia: <b data-stockcount="${v.id}">${v.stock_available??0}</b></span></div>
+      <details data-stock="${v.id}" ontoggle="if(this.open) loadVariantStock(${v.id}, true)">
+        <summary style="font-size:12px;color:var(--muted)">📦 Database Stok — Tersedia: <b data-stockcount="${v.id}">${v.stock_available??0}</b> <span class="muted">(klik untuk lihat / tambah stok)</span></summary>
+        <div data-stockbox="${v.id}"><p class="muted">Klik "Muat / Refresh Stok" untuk melihat isi stok.</p></div>
+        <p class="muted" style="font-size:12px;margin:8px 0 4px">⚡ <b>Input cepat (berpasangan):</b> ketik email → Enter → ketik password → Enter → tersimpan, langsung ketik email berikutnya. Password selalu pasangan email di baris yang sama. Di HP: tombol Enter di keyboard pindah field / menyimpan, bukan me-refresh halaman.</p>
+        <div class="flex" style="margin-top:6px">
+          <input data-se="${v.id}" placeholder="Email" style="flex:2" autocomplete="off" inputmode="email" enterkeyhint="next" onkeydown="if(event.key==='Enter'){event.preventDefault();stockQuickNext(${v.id})}">
+          <input data-sp="${v.id}" placeholder="Password" style="flex:2" autocomplete="off" enterkeyhint="done" onkeydown="if(event.key==='Enter'){event.preventDefault();addStockForm(${v.id})}">
+          <button class="btn sm" onclick="addStockForm(${v.id})">＋ Tambah</button>
+        </div>
+        <div class="flex" style="margin-top:6px">
+          <input data-su="${v.id}" placeholder="Username (opsional)" autocomplete="off">
+          <input data-sk="${v.id}" placeholder="Kode (opsional)" autocomplete="off">
+          <input data-sl="${v.id}" placeholder="Link (opsional)" autocomplete="off">
+          <input data-spn="${v.id}" placeholder="PIN (opsional)" autocomplete="off">
+        </div>
+        <details><summary style="font-size:12px;color:var(--muted)">Tambah banyak sekaligus — satu akun per baris: email|password</summary>
+          <textarea data-sbulk="${v.id}" placeholder="akun1@mail.com|Pass123&#10;akun2@mail.com|Pass456"></textarea>
+          <div class="flex" style="margin-top:6px"><button class="btn sm" onclick="addStockBulk(${v.id})">＋ Tambah Banyak</button></div>
+          <p class="muted">Format per baris: email|password — boleh ditambah |username|kode|link|pin. Baris kosong atau tanpa email/password dilewati.</p>
+        </details>
+        <div class="flex" style="margin-top:6px"><button class="btn sm ghost" onclick="loadVariantStock(${v.id})">🔄 Muat / Refresh Stok</button></div>
+      </details>
+    </div>`).join('')).join('');
+}
+function scrollToStock(id){
+  const det = document.querySelector(`details[data-stock="${id}"]`);
+  if(!det){ toast('Varian ini diproses supplier — tidak pakai stok.'); return; }
+  det.open = true; loadVariantStock(id, true);
+  const anchor = document.getElementById('stok-'+id);
+  if(anchor) anchor.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+// Input cepat stok: Enter di email -> fokus ke password baris yang sama.
+function stockQuickNext(id){
+  const pw = document.querySelector(`[data-sp="${id}"]`);
+  if(pw) pw.focus();
+}
+function setSupplierFilter(s2){ window._supplierFilter = s2; loadProducts(); }
 async function newProduct(){
   const name = prompt('Nama produk / aplikasi (contoh: CapCut):'); if(!name) return;
   const app = prompt('Nama aplikasi (untuk grup katalog, contoh: CapCut):', name); if(app===null) return;
   const code = prompt('Kode produk (contoh: CC — kosongkan untuk dibuat otomatis):','')||'';
   try{ await api('/products',{method:'POST',body:JSON.stringify({name,app,code,type:'otomatis',supplier:'manual',enabled:1})}); toast('Produk dibuat.'); loadProducts(); }catch(e){ toast(e.message); }
 }
-async function editProduct(id){
+// Form Edit Produk (inline di kartu produk — ganti prompt berantai).
+// Bisa ubah: nama, kode, aplikasi, deskripsi PER CHANNEL (WhatsApp &
+// Telegram terpisah — petunjuk interaksinya beda: WA "ketik 1 untuk Beli…",
+// TG "ketuk tombol Beli…"), supplier, supplier_product_id, kategori, catatan
+// wajib, aktif/nonaktif. Deskripsi produk HANYA diedit di sini — tab Teks &
+// Menu hanya untuk teks menu bot (menu_welcome, help, terminologi, sosmed,
+// riwayat, beli_confirm, catatan, dsb.), bukan deskripsi produk.
+// Simpan -> PUT /api/products/:id (guard kunci supplier berlaku: produk
+// supplier tidak bisa diaktifkan kalau key-nya kosong).
+const PRODUCT_SUPPLIERS = ['manual','lollipop','buzzerpanel','lhie','buymail','fireflazz','pterodactyl'];
+function editProduct(id){
   const p = (window._products||[]).find(x=>x.id===id); if(!p) return;
-  const name = prompt('Nama produk:', p.name); if(name===null) return;
-  const code = prompt('Kode produk (dipakai buyer, contoh: CC):', p.code||''); if(code===null) return;
-  const desc = prompt('Deskripsi:', p.description||''); if(desc===null) return;
-  const supplier = prompt('Supplier (manual/lollipop/lhie/buymail/fireflazz/pterodactyl):', p.supplier); if(supplier===null) return;
-  const spid = prompt('Supplier Product ID / Service ID (kosongkan kalau manual):', p.supplier_product_id||''); if(spid===null) return;
-  try{ await api('/products/'+id,{method:'PUT',body:JSON.stringify({name,code,description:desc,supplier,supplier_product_id:spid})}); loadProducts(); }catch(e){ toast(e.message); }
+  const box = document.querySelector(`[data-pform="${id}"]`); if(!box) return;
+  box.innerHTML = `
+    <div class="card plain" style="box-shadow:none;margin-top:8px">
+      <h3>Edit Produk — ${esc(p.name)}</h3>
+      <div class="row">
+        <div><label>Nama produk</label><input id="pfName" value="${esc(p.name)}"></div>
+        <div><label>Kode produk</label><input id="pfCode" value="${esc(p.code||'')}"></div>
+      </div>
+      <div class="row">
+        <div><label>Aplikasi (grup katalog)</label><input id="pfApp" value="${esc(p.app||'')}"></div>
+        <div><label>Supplier</label>
+          <select id="pfSupplier">${PRODUCT_SUPPLIERS.map(x=>`<option value="${x}" ${p.supplier===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      </div>
+      <label>Deskripsi — WhatsApp (petunjuk: "ketik 1 untuk Beli…")</label>
+      <textarea id="pfDescWa">${esc(p.description_wa||p.description||'')}</textarea>
+      <label>Deskripsi — Telegram (petunjuk: "ketuk tombol Beli…")</label>
+      <textarea id="pfDescTg">${esc(p.description_tg||p.description||'')}</textarea>
+      <label>Supplier Product ID / Service ID (kosongkan kalau manual)</label>
+      <input id="pfSpid" value="${esc(p.supplier_product_id||'')}">
+      <div class="row">
+        <div><label>Kategori (grup di Katalog)</label>
+          <select id="pfCat">
+            <option value="digital" ${p.category==='digital'?'selected':''}>digital (Premium App)</option>
+            <option value="smm" ${p.category==='smm'?'selected':''}>smm (Kebutuhan Sosmed)</option>
+            <option value="panel" ${p.category==='panel'?'selected':''}>panel (Premium App)</option>
+            <option value="topup" ${p.category==='topup'?'selected':''}>topup (Top up Game)</option>
+          </select></div>
+        <div><label>&nbsp;</label>
+          <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" style="width:auto" id="pfNoteReq" ${p.note_required?'checked':''}> Catatan wajib (mis. produk invite — pembeli wajib isi email)</label>
+          <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" style="width:auto" id="pfEnabled" ${p.enabled?'checked':''}> Aktif (tampil di katalog bot)</label></div>
+      </div>
+      <div class="flex" style="margin-top:8px">
+        <button class="btn" onclick="saveProductForm(${p.id})">💾 Simpan Produk</button>
+        <button class="btn ghost" onclick="cancelProductForm(${p.id})">Batal</button>
+      </div>
+    </div>`;
+  box.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+function cancelProductForm(id){ const box = document.querySelector(`[data-pform="${id}"]`); if(box) box.innerHTML = ''; }
+async function saveProductForm(id){
+  const name = document.getElementById('pfName').value.trim();
+  if(!name) return toast('Nama produk wajib diisi.');
+  const body = {
+    name,
+    code: document.getElementById('pfCode').value.trim(),
+    app: document.getElementById('pfApp').value.trim(),
+    description_wa: document.getElementById('pfDescWa').value,
+    description_tg: document.getElementById('pfDescTg').value,
+    supplier: document.getElementById('pfSupplier').value,
+    supplier_product_id: document.getElementById('pfSpid').value.trim(),
+    category: document.getElementById('pfCat').value,
+    note_required: document.getElementById('pfNoteReq').checked,
+    enabled: document.getElementById('pfEnabled').checked,
+  };
+  try{ await api('/products/'+id,{method:'PUT',body:JSON.stringify(body)}); toast('Produk disimpan.'); loadProducts(); }catch(e){ toast(e.message); }
 }
 async function toggleProduct(id,enabled){ try{ await api('/products/'+id,{method:'PUT',body:JSON.stringify({enabled:!!enabled})}); loadProducts(); }catch(e){ toast(e.message); } }
 async function deleteProduct(id){ if(!confirm('Hapus produk ini beserta variannya?')) return; try{ await api('/products/'+id,{method:'DELETE'}); loadProducts(); }catch(e){ toast(e.message); } }
@@ -563,21 +717,83 @@ async function newVariant(pid){
   const code = prompt('Kode varian (contoh: CC30HP — kosongkan untuk dibuat otomatis):','')||'';
   try{ await api('/products/'+pid+'/variants',{method:'POST',body:JSON.stringify({name,code,price,duration,stock_type:'otomatis',delivery_template:'📧 Email: {{email}}\n🔑 Password: {{password}}'})}); loadProducts(); }catch(e){ toast(e.message); }
 }
-async function editVariant(id){
+// Form Edit Varian (inline di blok varian — ganti prompt berantai).
+// Bisa ubah: nama, harga, durasi, kind, stock_type (otomatis/manual —
+// setting PER VARIAN, bukan per produk: tiap varian punya stoknya sendiri),
+// template pengiriman, kode, aktif/nonaktif — ditambah PER CHANNEL per varian:
+// WhatsApp: deskripsi WA + action word (kata yang diketik pembeli WA untuk
+// memilih varian ini — kosongkan = pakai kode varian); Telegram: deskripsi TG
+// + label tombol inline (kosongkan = pakai nama varian). Yang tetap bersama
+// (shared): harga, manual/otomatis, catatan wajib (di produk), dan stok.
+// Simpan -> PUT /api/variants/:id. Stok yang sudah ada TIDAK hilang saat
+// stock_type diubah (stock_items per variant_id); varian otomatis & manual
+// sama-sama menampilkan tabel stoknya di bagian 📦 Stok.
+const VARIANT_KINDS = ['','private','sharing','member','invite','akun','smm','topup','panel','admin'];
+const VARIANT_STOCK_TYPES = ['otomatis','manual','smm','supplier','panel','topup'];
+function editVariant(id){
   const v = (window._products||[]).flatMap(p=>p.variants||[]).find(x=>x.id===id); if(!v) return;
-  const price = Number(prompt('Harga jual (Rp):', v.price)); if(price===0||isNaN(price)) return;
-  const code = prompt('Kode varian (dipakai buyer, contoh: CC30HP):', v.code||''); if(code===null) return;
-  const tpl = prompt('Template pengiriman (pakai {{email}} {{password}} dst):', v.delivery_template||''); if(tpl===null) return;
-  try{ await api('/variants/'+id,{method:'PUT',body:JSON.stringify({price,code,delivery_template:tpl})}); loadProducts(); }catch(e){ toast(e.message); }
+  const box = document.querySelector(`[data-vform="${id}"]`); if(!box) return;
+  box.innerHTML = `
+    <div class="card plain" style="box-shadow:none;margin-top:8px">
+      <h3>Edit Varian — ${esc(v.name)}</h3>
+      <div class="row">
+        <div><label>Nama varian</label><input id="vfName" value="${esc(v.name)}"></div>
+        <div><label>Harga jual (Rp, angka saja)</label><input id="vfPrice" type="number" value="${v.price}"></div>
+      </div>
+      <div class="row">
+        <div><label>Durasi (contoh: 30 hari, 1 bulan)</label><input id="vfDuration" value="${esc(v.duration||'')}"></div>
+        <div><label>Kode varian</label><input id="vfCode" value="${esc(v.code||'')}"></div>
+      </div>
+      <div class="row">
+        <div><label>Kind (jenis varian)</label>
+          <select id="vfKind">${VARIANT_KINDS.map(x=>`<option value="${x}" ${(v.kind||'')===x?'selected':''}>${x||'(kosong)'}</option>`).join('')}</select></div>
+        <div><label>Stok (otomatis / manual) — per varian</label>
+          <select id="vfStockType">${VARIANT_STOCK_TYPES.map(x=>`<option value="${x}" ${v.stock_type===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      </div>
+      <label>Template pengiriman (pakai {{email}} {{password}} dst — kosongkan untuk pakai template produk/bawaan)</label>
+      <textarea id="vfTpl">${esc(v.delivery_template||'')}</textarea>
+      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" style="width:auto" id="vfEnabled" ${v.enabled?'checked':''}> Aktif (tampil di katalog bot)</label>
+      <h3 style="margin-top:10px">📱 WhatsApp</h3>
+      <label>Deskripsi WA (petunjuk: "ketik 1 untuk Beli…")</label>
+      <textarea id="vfDescWa">${esc(v.description_wa||'')}</textarea>
+      <label>Action word WA — kata yang diketik pembeli untuk memilih varian ini (kosongkan = pakai kode varian "${esc(v.code||'')}")</label>
+      <input id="vfActionWord" value="${esc(v.action_word||'')}" placeholder="${esc(v.code||'')}">
+      <h3 style="margin-top:10px">✈️ Telegram</h3>
+      <label>Deskripsi TG (petunjuk: "ketuk tombol Beli…")</label>
+      <textarea id="vfDescTg">${esc(v.description_tg||'')}</textarea>
+      <label>Label tombol TG (kosongkan = pakai nama varian "${esc(v.name)}")</label>
+      <input id="vfLabelTg" value="${esc(v.label_tg||'')}" placeholder="${esc(v.name)}">
+      <div class="flex" style="margin-top:8px">
+        <button class="btn" onclick="saveVariantForm(${v.id})">💾 Simpan Varian</button>
+        <button class="btn ghost" onclick="cancelVariantForm(${v.id})">Batal</button>
+      </div>
+    </div>`;
+  box.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+function cancelVariantForm(id){ const box = document.querySelector(`[data-vform="${id}"]`); if(box) box.innerHTML = ''; }
+async function saveVariantForm(id){
+  const name = document.getElementById('vfName').value.trim();
+  const price = Number(document.getElementById('vfPrice').value);
+  if(!name) return toast('Nama varian wajib diisi.');
+  if(isNaN(price) || price < 0) return toast('Harga jual harus angka (0 ke atas).');
+  const body = {
+    name,
+    price,
+    duration: document.getElementById('vfDuration').value.trim(),
+    code: document.getElementById('vfCode').value.trim(),
+    kind: document.getElementById('vfKind').value,
+    stock_type: document.getElementById('vfStockType').value,
+    delivery_template: document.getElementById('vfTpl').value,
+    enabled: document.getElementById('vfEnabled').checked,
+    description_wa: document.getElementById('vfDescWa').value,
+    action_word: document.getElementById('vfActionWord').value.trim(),
+    description_tg: document.getElementById('vfDescTg').value,
+    label_tg: document.getElementById('vfLabelTg').value.trim(),
+  };
+  try{ await api('/variants/'+id,{method:'PUT',body:JSON.stringify(body)}); toast('Varian disimpan.'); loadProducts(); }catch(e){ toast(e.message); }
 }
 async function toggleVariant(id,enabled){ try{ await api('/variants/'+id,{method:'PUT',body:JSON.stringify({enabled:!!enabled})}); loadProducts(); }catch(e){ toast(e.message); } }
-async function addStock(id){
-  // Tombol "+ Stok" sekarang membuka bagian Database Stok varian itu.
-  const det = document.querySelector(`details[data-stock="${id}"]`);
-  if(!det){ toast('Varian ini manual — tidak pakai stok otomatis.'); return; }
-  det.open = true; loadVariantStock(id, true);
-}
-// Database Stok per varian (hanya varian otomatis). Tabel dimuat saat
+// Database Stok per varian (varian otomatis & manual). Tabel dimuat saat
 // bagian dibuka supaya daftar produk tetap ringan.
 async function loadVariantStock(id, onlyIfNotLoaded){
   const box = document.querySelector(`[data-stockbox="${id}"]`); if(!box) return;
@@ -587,7 +803,9 @@ async function loadVariantStock(id, onlyIfNotLoaded){
     const rows = await api('/variants/'+id+'/stock');
     box.dataset.loaded = '1';
     const avail = rows.filter(r=>r.status==='available').length;
-    const cnt = document.querySelector(`[data-stockcount="${id}"]`); if(cnt) cnt.textContent = avail;
+    // Update SEMUA hitungan "Tersedia" varian ini — badge di kartu produk
+    // (WA/TG) dan di bagian Stok — supaya selalu sama tanpa render ulang.
+    document.querySelectorAll(`[data-stockcount="${id}"]`).forEach(el=>{ el.textContent = avail; });
     box.innerHTML = rows.length
       ? '<table><tr><th>Email</th><th>Password</th><th>Status</th><th>Kode Pesanan</th><th>Tanggal</th><th></th></tr>'+rows.map(r=>{ const p=r.payload||{}; return `<tr><td class="mono">${esc(p.email||'-')}</td><td class="mono">${esc(p.password||'-')}</td><td><span class="badge ${r.status==='available'?'ok':''}">${esc(r.status)}</span></td><td class="mono">${esc(r.order_code||'-')}</td><td class="muted">${esc((r.created_at||'').slice(0,16))}</td><td>${r.status==='available'?`<button class="btn sm danger" onclick="deleteStock(${r.id},${id})">Hapus</button>`:''}</td></tr>`; }).join('')+'</table>'
       : '<p class="muted">Belum ada stok untuk varian ini.</p>';
@@ -605,6 +823,9 @@ async function addStockForm(id){
     ['e','p','u','k','l','pn'].forEach(k=>{ const el=document.querySelector(`[data-s${k}="${id}"]`); if(el) el.value=''; });
     const box = document.querySelector(`[data-stockbox="${id}"]`); if(box) delete box.dataset.loaded;
     loadVariantStock(id);
+    // Input cepat: pasangan tersimpan -> fokus kembali ke email supaya
+    // langsung ketik pasangan berikutnya (efektif baris baru).
+    const em = document.querySelector(`[data-se="${id}"]`); if(em) em.focus();
   }catch(e){ toast(e.message); }
 }
 async function addStockBulk(id){
@@ -713,19 +934,25 @@ async function loadButtons(){
     hideTokenBanner();
     window._buttons = list;
     const filter = (document.getElementById('btnFilter')||{}).value || 'all';
-    const shown = filter==='all' ? list : list.filter(b=>b.platform==='both'||b.platform===filter);
-    const waQuick = list.filter(b=>b.enabled&&(b.platform==='both'||b.platform==='whatsapp')&&b.action!=='url').length;
-    const waLinks = list.filter(b=>b.enabled&&(b.platform==='both'||b.platform==='whatsapp')&&b.action==='url'&&/^https?:\/\//i.test(b.target||'')).length;
+    const showAtFilter = (document.getElementById('btnShowAt')||{}).value || 'all';
+    let shown = filter==='all' ? list : list.filter(b=>b.platform==='both'||b.platform===filter);
+    if(showAtFilter!=='all') shown = shown.filter(b=>(b.show_at||'menu')===showAtFilter);
+    // Quick replies WA = tombol menu (show_at='menu', bukan url); maks 3.
+    const waQuick = list.filter(b=>b.enabled&&(b.platform==='both'||b.platform==='whatsapp')&&b.action!=='url'&&(b.show_at||'menu')==='menu').length;
+    // Link Penting WA = tombol link show_at='none' yang targetnya terisi; maks 3.
+    const waLinks = list.filter(b=>b.enabled&&(b.platform==='both'||b.platform==='whatsapp')&&b.action==='url'&&(!b.show_at||b.show_at==='none')&&/^https?:\/\//i.test(b.target||'')).length;
+    const SHOW_AT_LABELS = { menu:'Menu Utama', katalog:'Katalog', tagihan:'Tagihan', setelah_bayar:'Setelah Bayar', none:'Tidak tampil' };
     let warn = '';
-    if(waQuick>3) warn += '<div class="note">⚠️ Tombol balasan aktif untuk WhatsApp ada '+waQuick+' — WA hanya menampilkan maks 3 per pesan. Sembunyikan sebagiannya.</div>';
+    if(waQuick>3) warn += '<div class="note">⚠️ Tombol menu aktif untuk WhatsApp ada '+waQuick+' — WA hanya menampilkan maks 3 tombol balasan per pesan. Sembunyikan sebagiannya.</div>';
     if(waLinks>3) warn += '<div class="note">⚠️ Tombol link aktif untuk WhatsApp ada '+waLinks+' — maks 3 per pesan link. Sembunyikan sebagiannya.</div>';
     document.getElementById('buttons').innerHTML = warn +
-      '<table><tr><th>Label</th><th>Aksi</th><th>Target / Link</th><th>Channel</th><th>Urutan</th><th>Status</th><th>Aksi</th></tr>'+
-      shown.map(b=>`<tr><td>${esc(b.label)} ${b.is_default?'<span class="badge">default</span>':''}</td><td class="mono">${esc(b.action)}</td><td class="mono">${b.action==='url'?(esc(b.target||'(belum diisi — tombol disembunyikan)')):'—'}</td><td>${channelBadges(b.platform)}</td><td>${b.sort_order}</td><td>${b.enabled?'Aktif':'Nonaktif'}</td>
+      '<table><tr><th>Label</th><th>Aksi</th><th>Isi (reply_text)</th><th>Target / Link</th><th>Tampil di</th><th>Channel</th><th>Urutan</th><th>Status</th><th>Aksi</th></tr>'+
+      shown.map(b=>`<tr><td>${esc(b.label)} ${b.is_default?'<span class="badge">default</span>':''}</td><td class="mono">${esc(b.action)}</td><td>${b.action==='text'?esc((b.reply_text||'').slice(0,60)||'(belum diisi)'):'—'}</td><td class="mono">${b.action==='url'?(esc(b.target||'(belum diisi — tombol disembunyikan)')):'—'}</td><td><span class="badge">${esc(SHOW_AT_LABELS[b.show_at||'menu']||b.show_at||'menu')}</span></td><td>${channelBadges(b.platform)}</td><td>${b.sort_order}</td><td>${b.enabled?'Aktif':'Nonaktif'}</td>
       <td><button class="btn sm ghost" onclick="editButton(${b.id})">Edit</button>
       <button class="btn sm ghost" onclick="toggleButton(${b.id},${b.enabled?0:1})">${b.enabled?'Sembunyikan':'Tampilkan'}</button>
       ${b.is_default?'':'<button class="btn sm danger" onclick="deleteButton('+b.id+')">Hapus</button>'}</td></tr>`).join('')+'</table>'
-      + (shown.length!==list.length?'<p class="muted">Menampilkan '+shown.length+' dari '+list.length+' tombol (filter: '+esc(filter)+').</p>':'');
+      + '<p class="muted">Tombol default tidak bisa dihapus — labelnya tetap bisa diubah lewat Edit, dan tombol bisa disembunyikan.</p>'
+      + (shown.length!==list.length?'<p class="muted">Menampilkan '+shown.length+' dari '+list.length+' tombol (filter: '+esc(filter)+' / '+esc(showAtFilter)+').</p>':'');
   }catch(e){ handleLoadError(e, 'buttons'); }
 }
 // Teks & Menu per channel
@@ -780,38 +1007,74 @@ async function saveChannelText(key){
   }
   try{ await api('/channel-texts/'+encodeURIComponent(key),{method:'PUT',body:JSON.stringify(body)}); toast('Teks disimpan — langsung dipakai bot.'); loadChannelTexts(); }catch(e){ toast(e.message); }
 }
-// Pengaturan produk (panel > Produk): kategori + catatan wajib.
-// Kategori 'smm' = produk tampil di menu Kebutuhan Sosmed, bukan Katalog.
-// Catatan wajib = buyer TIDAK bisa Skip catatan (mis. produk invite yang
-// butuh email buyer); berlaku sama di WA & Telegram (pengaturan produk sinkron).
-async function saveProductSettings(id){
-  const cat = document.querySelector(`[data-cat="${id}"]`);
-  const nr = document.querySelector(`[data-notereq="${id}"]`);
-  try{ await api('/products/'+id,{method:'PUT',body:JSON.stringify({category: cat?cat.value:undefined, note_required: nr?!!nr.checked:undefined})}); toast('Pengaturan produk disimpan.'); loadProducts(); }catch(e){ toast(e.message); }
-}
 async function saveProductTemplate(id){
   const ta = document.querySelector(`[data-ptpl="${id}"]`);
   if(!ta) return;
   try{ await api('/products/'+id,{method:'PUT',body:JSON.stringify({delivery_template:ta.value})}); toast('Template produk disimpan.'); }catch(e){ toast(e.message); }
 }
-async function newButton(){
-  const label = prompt('Label tombol (contoh: Promo Hari Ini):'); if(!label) return;
-  const action = prompt('Aksi — pilih salah satu:\nmenu_katalog / menu_cek_pesanan / menu_bantuan / menu_sosmed / menu_riwayat / menu_terminologi / menu_topup / menu_utama / beli_sekarang / batal\natau ketik "url" untuk tombol link:','menu_katalog'); if(!action) return;
-  let target = '';
-  if(action.trim()==='url') { target = prompt('Link tujuannya (contoh: https://okta-anggara.my.id):','https://'); if(target===null) return; }
-  const platform = prompt('Platform (both / whatsapp / telegram):','both')||'both';
-  try{ await api('/buttons',{method:'POST',body:JSON.stringify({label,action:action.trim(),target,platform,sort_order:99})}); toast('Tombol ditambah.'); loadButtons(); }catch(e){ toast(e.message); }
+// Form tambah/edit tombol (inline, bukan prompt berantai): label, aksi
+// (termasuk 'text' + 'url'), isi pesan (reply_text, textarea), target,
+// platform, tampil di (show_at), urutan. Tombol default tetap bisa diedit
+// labelnya; penghapusan tetap ditolak server (alasan tampil di toast + di
+// bawah tabel).
+const BTN_ACTIONS = ['menu_katalog','menu_cek_pesanan','menu_bantuan','menu_riwayat','menu_terminologi','menu_topup','menu_utama','text','url','beli_sekarang','konfirmasi_bayar','batal'];
+const SHOW_AT_OPTIONS = [['menu','Menu Utama'],['katalog','Katalog (pemilih grup)'],['tagihan','Tagihan (pesan QRIS)'],['setelah_bayar','Setelah Bayar (pesan sukses)'],['none','Tidak tampil']];
+function showButtonForm(id){
+  const b = id ? (window._buttons||[]).find(x=>x.id===id) : null;
+  if(id && !b) return;
+  const v = b || { label:'', action:'menu_katalog', target:'', platform:'both', sort_order:99, enabled:1, reply_text:'', show_at:'menu' };
+  document.getElementById('buttonForm').innerHTML = `
+    <div class="card plain" style="box-shadow:none;margin-top:10px">
+      <h3>${b ? 'Edit Tombol — '+esc(b.label) : '+ Tambah Tombol'}</h3>
+      <label>Label tombol</label>
+      <input id="bfLabel" value="${esc(v.label)}" placeholder="Contoh: Promo Hari Ini">
+      <label>Aksi</label>
+      <select id="bfAction">${BTN_ACTIONS.map(a=>`<option value="${a}" ${v.action===a?'selected':''}>${a}${a==='text'?' — kirim isi pesan':''}${a==='url'?' — tombol link':''}</option>`).join('')}</select>
+      <label>Isi pesan (reply_text) — dikirim saat tombol aksi "text" diketuk</label>
+      <textarea id="bfReply" placeholder="Contoh: Promo hari ini: semua akun premium diskon 10%! Ketik .katalog untuk order ya Kak.">${esc(v.reply_text||'')}</textarea>
+      <label>Target / Link — untuk aksi "url" (contoh: https://okta-anggara.my.id)</label>
+      <input id="bfTarget" value="${esc(v.target||'')}" placeholder="https://...">
+      <div class="row">
+        <div><label>Platform</label>
+          <select id="bfPlatform"><option value="both" ${v.platform==='both'?'selected':''}>both (WA &amp; TG)</option><option value="whatsapp" ${v.platform==='whatsapp'?'selected':''}>whatsapp</option><option value="telegram" ${v.platform==='telegram'?'selected':''}>telegram</option></select></div>
+        <div><label>Tampil di</label>
+          <select id="bfShowAt">${SHOW_AT_OPTIONS.map(([val,lab])=>`<option value="${val}" ${(v.show_at||'menu')===val?'selected':''}>${lab}</option>`).join('')}</select></div>
+        <div><label>Urutan tampil (angka kecil = lebih atas)</label>
+          <input id="bfSort" type="number" value="${v.sort_order}"></div>
+      </div>
+      <div class="flex" style="margin-top:8px">
+        <button class="btn" onclick="saveButtonForm(${b?b.id:'null'})">💾 Simpan Tombol</button>
+        <button class="btn ghost" onclick="cancelButtonForm()">Batal</button>
+        ${b && b.is_default ? '<span class="muted">Tombol default tidak bisa dihapus — tapi label &amp; isinya tetap bisa diubah di sini.</span>' : ''}
+      </div>
+    </div>`;
+  document.getElementById('buttonForm').scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
-async function editButton(id){
-  const b = (window._buttons||[]).find(x=>x.id===id); if(!b) return;
-  const label = prompt('Label tombol:', b.label); if(label===null) return;
-  const action = prompt('Aksi (menu_katalog / menu_cek_pesanan / menu_bantuan / menu_sosmed / menu_riwayat / menu_terminologi / menu_topup / menu_utama / beli_sekarang / batal / url):', b.action); if(action===null) return;
-  let target = b.target||'';
-  if(action.trim()==='url') { target = prompt('Link tujuannya:', target||'https://'); if(target===null) return; }
-  const platform = prompt('Platform (both / whatsapp / telegram):', b.platform); if(platform===null) return;
-  const sort = prompt('Urutan tampil (angka kecil = lebih atas):', String(b.sort_order)); if(sort===null) return;
-  try{ await api('/buttons/'+id,{method:'PUT',body:JSON.stringify({label,action:action.trim(),target,platform,sort_order:Number(sort)||b.sort_order})}); toast('Tombol disimpan.'); loadButtons(); }catch(e){ toast(e.message); }
+function cancelButtonForm(){ document.getElementById('buttonForm').innerHTML = ''; }
+async function saveButtonForm(id){
+  const label = document.getElementById('bfLabel').value.trim();
+  const action = document.getElementById('bfAction').value;
+  const reply_text = document.getElementById('bfReply').value;
+  const target = document.getElementById('bfTarget').value.trim();
+  const platform = document.getElementById('bfPlatform').value;
+  const show_at = document.getElementById('bfShowAt').value;
+  const sort_order = Number(document.getElementById('bfSort').value)||0;
+  if(!label) return toast('Label tombol wajib diisi.');
+  if(action==='text' && !reply_text.trim()) return toast('Aksi "text" wajib diisi isi pesannya (reply_text).');
+  if(action==='url' && !/^https?:\/\//i.test(target)) return toast('Aksi "url" wajib diisi link yang valid (https://...).');
+  try{
+    if(id){
+      await api('/buttons/'+id,{method:'PUT',body:JSON.stringify({label,action,reply_text,target,platform,show_at,sort_order})});
+      toast('Tombol disimpan.');
+    } else {
+      await api('/buttons',{method:'POST',body:JSON.stringify({label,action,reply_text,target,platform,show_at,sort_order})});
+      toast('Tombol ditambah — langsung muncul di menu bot.');
+    }
+    cancelButtonForm(); loadButtons();
+  }catch(e){ toast(e.message); }
 }
+async function newButton(){ showButtonForm(null); }
+async function editButton(id){ showButtonForm(id); }
 async function toggleButton(id,enabled){ try{ await api('/buttons/'+id,{method:'PUT',body:JSON.stringify({enabled:!!enabled})}); loadButtons(); }catch(e){ toast(e.message); } }
 async function deleteButton(id){ if(!confirm('Hapus tombol ini?')) return; try{ await api('/buttons/'+id,{method:'DELETE'}); loadButtons(); }catch(e){ toast(e.message); } }
 // Broadcast
