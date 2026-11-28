@@ -182,6 +182,7 @@
   <button data-tab="broadcast">📣 Broadcast</button>
   <button data-tab="integrasi">🔑 Integrasi</button>
   <button data-tab="pengaturan">⚙️ Pengaturan</button>
+  <button data-tab="sosmed">🌐 Sosmed</button>
 </nav>
 <main>
   <!-- Banner token: muncul kalau API menolak (401) — token belum diisi / salah -->
@@ -302,6 +303,7 @@
         <button class="btn ghost" onclick="loadSupplier('fireflazz')">Lihat Fireflazz</button>
       </div>
       <div id="supplierList"><p class="muted">Memuat…</p></div>
+      <div id="smmPublishBox"></div>
     </div>
     <div class="card">
       <h3>Catatan tiap supplier</h3>
@@ -399,6 +401,24 @@
       <p class="muted">Sekarang: <b>NexaPayz</b> (starter). Pindah ke <b>Duitku</b> hanya setelah KYC disetujui + QRIS aktif. Ubah di tab Integrasi → gateway_active.</p>
     </div>
   </section>
+
+  <!-- SOSMED (sub-grup & kategori SMM — ronde 7c) -->
+  <section id="tab-sosmed">
+    <div class="card">
+      <h2><span class="dot" style="background:linear-gradient(135deg,#059669,#10b981)"></span>🌐 Sosmed — Sub-grup &amp; Kategori</h2>
+      <p class="muted">Hierarki katalog <b>Kebutuhan Sosmed</b>: sub-grup (mis. 🌐 Biasa / 🇮🇩 Indonesia) → kategori (mis. "Instagram Followers") → layanan. Penugasan <b>manual</b> — tidak ada yang otomatis dari nama layanan. Klik satu grup untuk melihat &amp; mengatur kategorinya di bawah. Kategori <b>"Lainnya"</b> di tiap grup adalah ember default (layanan tanpa kategori) dan <b>tidak bisa dihapus</b>.</p>
+      <div class="flex"><button class="btn" onclick="newSmmGroup()">+ Tambah Grup</button><button class="btn ghost" onclick="loadSmmGroups()">↻ Muat ulang</button></div>
+      <div id="smmGroupForm"></div>
+      <div id="smmGroups"><p class="muted">Memuat…</p></div>
+    </div>
+    <div class="card" id="smmCatCard">
+      <h3 id="smmCatTitle">📁 Kategori — pilih grup di atas dulu</h3>
+      <p class="muted">Kategori di dalam grup yang dipilih. Setiap tombol (sub-grup &amp; kategori) bisa punya deskripsi sendiri — deskripsi itu yang nanti dilihat pembeli saat membuka tombolnya di bot.</p>
+      <div class="flex"><button class="btn" id="smmNewCatBtn" onclick="newSmmCategory()" disabled>+ Tambah Kategori</button></div>
+      <div id="smmCatForm"></div>
+      <div id="smmCategories"><p class="muted">Pilih grup di atas untuk melihat kategorinya.</p></div>
+    </div>
+  </section>
 </main>
 <div class="toast" id="toast"></div>
 <footer>Blukutuk Store · Bot v1 — 1 backend · 1 database · WA + Telegram · NexaPayz</footer>
@@ -454,6 +474,7 @@ document.querySelectorAll('#tabs button').forEach(b=>{
     if(b.dataset.tab==='tombol') loadButtons();
     if(b.dataset.tab==='teks') loadChannelTexts();
     if(b.dataset.tab==='integrasi') loadIntegrations();
+    if(b.dataset.tab==='sosmed') loadSmmGroups();
   };
 });
 // Dashboard
@@ -755,7 +776,7 @@ function editProduct(id){
       <input id="pfLink" value="${esc(p.link||'')}" placeholder="https://...">
       <div class="row">
         <div><label>Kategori (grup di Katalog)</label>
-          <select id="pfCat">
+          <select id="pfCat" onchange="onPfCatChanged()">
             <option value="digital" ${p.category==='digital'?'selected':''}>digital (Premium App)</option>
             <option value="smm" ${p.category==='smm'?'selected':''}>smm (Kebutuhan Sosmed)</option>
             <option value="panel" ${p.category==='panel'?'selected':''}>panel (Premium App)</option>
@@ -765,12 +786,21 @@ function editProduct(id){
           <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" style="width:auto" id="pfNoteReq" ${p.note_required?'checked':''}> Catatan wajib (mis. produk invite — pembeli wajib isi email)</label>
           <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" style="width:auto" id="pfEnabled" ${p.enabled?'checked':''}> Aktif (tampil di katalog bot)</label></div>
       </div>
+      <div id="pfSmmWrap" style="display:none">
+        <div class="row">
+          <div><label>Sub-grup SMM</label><select id="pfSmmGroup" onchange="loadPfSmmCats()"></select></div>
+          <div><label>Kategori SMM</label><select id="pfSmmCat"></select></div>
+        </div>
+        <p class="muted">Hanya untuk produk SMM — penugasan manual, bukan dari nama layanan.</p>
+      </div>
       <div class="flex" style="margin-top:8px">
         <button class="btn" onclick="saveProductForm(${p.id})">💾 Simpan Produk</button>
         <button class="btn ghost" onclick="cancelProductForm(${p.id})">Batal</button>
       </div>
     </div>`;
   box.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  window._pfEditingProduct = p;
+  initPfSmm(p);
 }
 function cancelProductForm(id){ const box = document.querySelector(`[data-pform="${id}"]`); if(box) box.innerHTML = ''; }
 async function saveProductForm(id){
@@ -790,7 +820,54 @@ async function saveProductForm(id){
     note_required: document.getElementById('pfNoteReq').checked,
     enabled: document.getElementById('pfEnabled').checked,
   };
+  // Ronde 7c: produk SMM ikut menyimpan penugasan sub-grup/kategori.
+  if(document.getElementById('pfCat').value === 'smm'){
+    const gid = document.getElementById('pfSmmGroup').value;
+    const cid = document.getElementById('pfSmmCat').value;
+    if(gid) body.smm_group_id = Number(gid);
+    if(cid) body.smm_category_id = Number(cid);
+  }
   try{ await api('/products/'+id,{method:'PUT',body:JSON.stringify(body)}); toast('Produk disimpan.'); loadProducts(); }catch(e){ toast(e.message); }
+}
+// Sub-grup/kategori SMM di form Edit Produk (ronde 7c): dua select
+// berjenjang, hanya tampil bila kategori produk = 'smm'. Ganti grup =
+// muat ulang kategori (termasuk "Lainnya").
+async function initPfSmm(p){
+  const wrap = document.getElementById('pfSmmWrap'); if(!wrap) return;
+  const cat = document.getElementById('pfCat');
+  const show = cat && cat.value === 'smm';
+  wrap.style.display = show ? '' : 'none';
+  if(!show) return;
+  try{
+    const groups = await api('/smm-groups');
+    const gsel = document.getElementById('pfSmmGroup'); if(!gsel) return;
+    gsel.innerHTML = groups.map(g=>`<option value="${g.id}">${esc((g.emoji?g.emoji+' ':'')+g.name)}</option>`).join('');
+    const gid = (p && p.smm_group_id) || (groups.find(g=>g.name==='Biasa')||{}).id || (groups[0] && groups[0].id);
+    if(gid) gsel.value = String(gid);
+    await loadPfSmmCats(p && p.smm_category_id);
+  }catch(e){ toast(e.message); }
+}
+function onPfCatChanged(){
+  const cat = document.getElementById('pfCat');
+  const wrap = document.getElementById('pfSmmWrap'); if(!wrap) return;
+  if(!cat || cat.value !== 'smm'){ wrap.style.display = 'none'; return; }
+  initPfSmm(window._pfEditingProduct || {});
+}
+async function loadPfSmmCats(selectedId){
+  const wrap = document.getElementById('pfSmmWrap'); if(!wrap) return;
+  const cat = document.getElementById('pfCat');
+  const show = cat && cat.value === 'smm';
+  wrap.style.display = show ? '' : 'none';
+  if(!show) return;
+  const gid = document.getElementById('pfSmmGroup').value;
+  const sel = document.getElementById('pfSmmCat'); if(!sel) return;
+  sel.innerHTML = '<option value="">Memuat…</option>';
+  try{
+    const cats = await api('/smm-categories?group_id='+encodeURIComponent(gid));
+    sel.innerHTML = cats.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+    if(selectedId) sel.value = String(selectedId);
+    else { const lainnya = cats.find(c=>c.name==='Lainnya'); if(lainnya) sel.value = String(lainnya.id); }
+  }catch(e){ sel.innerHTML = ''; toast(e.message); }
 }
 async function toggleProduct(id,enabled){ try{ await api('/products/'+id,{method:'PUT',body:JSON.stringify({enabled:!!enabled})}); loadProducts(); }catch(e){ toast(e.message); } }
 async function deleteProduct(id){ if(!confirm('Hapus produk ini beserta variannya?')) return; try{ await api('/products/'+id,{method:'DELETE'}); loadProducts(); }catch(e){ toast(e.message); } }
@@ -1138,11 +1215,257 @@ async function toggleSupplier(id,enabled){
   }catch(e){ toast(e.message); }
 }
 async function publishSupplier(id){
+  // Ronde 7c: baris SMM (Lollipop / BuzzerPanel) membuka dialog kecil
+  // pilih sub-grup -> kategori dulu; baris non-SMM tidak berubah
+  // (langsung publish, body '{}').
+  const row = (window._supplierData||[]).find(x=>x.id===id);
+  if(row && (row.supplier==='lollipop' || row.supplier==='buzzerpanel')){ openSmmPublishDialog(row); return; }
   try{
     const r = await api('/supplier-products/'+id+'/publish',{method:'POST',body:'{}'});
     toast(r.already ? ('Sudah ada di katalog (kode: '+(r.code||'')+'). Nama/kode tidak diubah.') : ('Dipublish ke katalog! Kode: '+(r.code||'')+' — nama & kode bisa diubah di tab Produk.'));
     loadSupplier(window._supplier||'lhie');
   }catch(e){ toast(e.message); }
+}
+// Dialog publish SMM (ronde 7c): select berjenjang Sub-grup -> Kategori,
+// default Biasa / Lainnya. Publish memanggil POST
+// /api/supplier-products/:id/publish dengan id grup + kategori.
+async function openSmmPublishDialog(row){
+  const box = document.getElementById('smmPublishBox'); if(!box) return;
+  box.innerHTML = `
+    <div class="card plain" style="box-shadow:none;margin-top:8px">
+      <h3>Publish SMM — ${esc(row.name)}</h3>
+      <p class="muted">Pilih sub-grup &amp; kategori tempat layanan ini tampil di Kebutuhan Sosmed (default: Biasa / Lainnya).</p>
+      <div class="row">
+        <div><label>Sub-grup</label><select id="spGroup" onchange="loadSmmPublishCats()"></select></div>
+        <div><label>Kategori</label><select id="spCat"></select></div>
+      </div>
+      <div class="flex" style="margin-top:8px">
+        <button class="btn" onclick="confirmSmmPublish(${row.id})">Jual ▶ Publish</button>
+        <button class="btn ghost" onclick="closeSmmPublishDialog()">Batal</button>
+      </div>
+    </div>`;
+  box.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  try{
+    const groups = await api('/smm-groups');
+    const sel = document.getElementById('spGroup');
+    sel.innerHTML = groups.map(g=>`<option value="${g.id}">${esc((g.emoji?g.emoji+' ':'')+g.name)}</option>`).join('');
+    const biasa = groups.find(g=>g.name==='Biasa');
+    if(biasa) sel.value = String(biasa.id);
+    await loadSmmPublishCats();
+  }catch(e){ toast(e.message); }
+}
+async function loadSmmPublishCats(){
+  const gid = document.getElementById('spGroup').value;
+  const sel = document.getElementById('spCat'); if(!sel) return;
+  sel.innerHTML = '<option value="">Memuat…</option>';
+  try{
+    const cats = await api('/smm-categories?group_id='+encodeURIComponent(gid));
+    sel.innerHTML = cats.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+    const lainnya = cats.find(c=>c.name==='Lainnya');
+    if(lainnya) sel.value = String(lainnya.id);
+  }catch(e){ sel.innerHTML=''; toast(e.message); }
+}
+function closeSmmPublishDialog(){ const box = document.getElementById('smmPublishBox'); if(box) box.innerHTML = ''; }
+async function confirmSmmPublish(id){
+  const gid = Number(document.getElementById('spGroup').value);
+  const cid = Number(document.getElementById('spCat').value);
+  if(!gid || !cid) return toast('Pilih sub-grup & kategori dulu.');
+  try{
+    const r = await api('/supplier-products/'+id+'/publish',{method:'POST',body:JSON.stringify({smm_group_id:gid, smm_category_id:cid})});
+    closeSmmPublishDialog();
+    toast(r.already ? ('Sudah ada di katalog (kode: '+(r.code||'')+'). Nama/kode tidak diubah.') : ('Dipublish ke katalog! Kode: '+(r.code||'')+' — nama & kode bisa diubah di tab Produk.'));
+    loadSupplier(window._supplier||'lhie');
+  }catch(e){ toast(e.message); }
+}
+// ---------- Sosmed: sub-grup & kategori SMM (ronde 7c) ----------
+// Pola folder-like: daftar grup di atas; klik satu grup -> daftar
+// kategorinya di bawah. Form tambah/edit inline (nama, emoji untuk grup,
+// deskripsi). Hapus yang ditolak server menampilkan pesan errornya lewat
+// toast (api() melempar data.error — pesan guard Bahasa Indonesia).
+async function loadSmmGroups(){
+  try{
+    const groups = await api('/smm-groups');
+    hideTokenBanner();
+    window._smmGroups = groups;
+    renderSmmGroups();
+    if(window._smmSelectedGroup){
+      const still = groups.find(g=>g.id===window._smmSelectedGroup);
+      if(still) loadSmmCategories(still.id);
+      else { window._smmSelectedGroup = null; renderSmmCategories(null, []); }
+    } else if(groups.length){
+      selectSmmGroup(groups[0].id);
+    }
+  }catch(e){ handleLoadError(e, 'smmGroups'); }
+}
+function renderSmmGroups(){
+  const list = window._smmGroups || [];
+  const sel = window._smmSelectedGroup;
+  const box = document.getElementById('smmGroups'); if(!box) return;
+  if(!list.length){ box.innerHTML = '<p class="muted">Belum ada grup — tekan + Tambah Grup.</p>'; return; }
+  box.innerHTML = list.map(g=>`<div class="card plain" style="box-shadow:none;${sel===g.id?'outline:2px solid #059669;':''}">
+    <div class="flex" style="justify-content:space-between;align-items:flex-start;gap:8px">
+      <div style="flex:1;min-width:0">
+        <b style="font-size:16px">${esc(g.emoji||'')} ${esc(g.name)}</b>
+        ${g.description?`<div class="muted" style="font-size:13px">${esc(g.description)}</div>`:''}
+        <div class="muted" style="font-size:13px">${g.product_count} layanan · ${g.category_count} kategori</div>
+      </div>
+      <div class="flex" style="flex-wrap:nowrap">
+        <button class="btn sm" onclick="selectSmmGroup(${g.id})">📁 Lihat Kategori</button>
+        <button class="btn sm ghost" onclick="editSmmGroup(${g.id})">Edit</button>
+        <button class="btn sm ghost" onclick="deleteSmmGroup(${g.id})">Hapus</button>
+      </div>
+    </div></div>`).join('');
+}
+function selectSmmGroup(id){
+  window._smmSelectedGroup = id;
+  renderSmmGroups();
+  loadSmmCategories(id);
+}
+async function loadSmmCategories(groupId){
+  const g = (window._smmGroups||[]).find(x=>x.id===groupId);
+  const title = document.getElementById('smmCatTitle');
+  if(title) title.textContent = '📁 Kategori — ' + (g ? (g.emoji?g.emoji+' ':'') + g.name : 'grup');
+  const btn = document.getElementById('smmNewCatBtn'); if(btn) btn.disabled = false;
+  const box = document.getElementById('smmCategories'); if(box) box.innerHTML = '<p class="muted">Memuat…</p>';
+  try{
+    const cats = await api('/smm-categories?group_id='+encodeURIComponent(groupId));
+    window._smmCategories = cats;
+    renderSmmCategories(groupId, cats);
+  }catch(e){ handleLoadError(e, 'smmCategories'); }
+}
+function renderSmmCategories(groupId, cats){
+  const box = document.getElementById('smmCategories'); if(!box) return;
+  if(!groupId){ box.innerHTML = '<p class="muted">Pilih grup di atas untuk melihat kategorinya.</p>'; return; }
+  if(!cats.length){ box.innerHTML = '<p class="muted">Belum ada kategori — tekan + Tambah Kategori.</p>'; return; }
+  box.innerHTML = cats.map(c=>`<div class="card plain" style="box-shadow:none">
+    <div class="flex" style="justify-content:space-between;align-items:flex-start;gap:8px">
+      <div style="flex:1;min-width:0">
+        <b style="font-size:15px">${esc(c.name)}</b>
+        ${c.description?`<div class="muted" style="font-size:13px">${esc(c.description)}</div>`:''}
+        <div class="muted" style="font-size:13px">${c.product_count} layanan</div>
+      </div>
+      <div class="flex" style="flex-wrap:nowrap">
+        <button class="btn sm ghost" onclick="editSmmCategory(${c.id})">Edit</button>
+        <button class="btn sm ghost" onclick="deleteSmmCategory(${c.id})" ${c.name==='Lainnya'?'disabled title="Kategori Lainnya tidak bisa dihapus"':''}>Hapus</button>
+      </div>
+    </div></div>`).join('');
+}
+function newSmmGroup(){
+  const box = document.getElementById('smmGroupForm'); if(!box) return;
+  box.innerHTML = `
+    <div class="card plain" style="box-shadow:none;margin-top:8px">
+      <h3>Tambah Grup Baru</h3>
+      <div class="row">
+        <div><label>Nama grup</label><input id="sgName" placeholder="Contoh: Indonesia"></div>
+        <div><label>Emoji</label><input id="sgEmoji" placeholder="🇮🇩" maxlength="4"></div>
+      </div>
+      <label>Deskripsi (dilihat pembeli saat membuka grup ini)</label>
+      <textarea id="sgDesc" placeholder="Contoh: Layanan sosmed Indonesia — followers & likes dari akun Indonesia."></textarea>
+      <div class="flex" style="margin-top:8px">
+        <button class="btn" onclick="saveSmmGroup()">💾 Simpan Grup</button>
+        <button class="btn ghost" onclick="cancelSmmGroupForm()">Batal</button>
+      </div>
+    </div>`;
+  document.getElementById('sgName').focus();
+}
+function editSmmGroup(id){
+  const g = (window._smmGroups||[]).find(x=>x.id===id); if(!g) return;
+  const box = document.getElementById('smmGroupForm'); if(!box) return;
+  box.innerHTML = `
+    <div class="card plain" style="box-shadow:none;margin-top:8px">
+      <h3>Edit Grup — ${esc(g.name)}</h3>
+      <div class="row">
+        <div><label>Nama grup</label><input id="sgName" value="${esc(g.name)}"></div>
+        <div><label>Emoji</label><input id="sgEmoji" value="${esc(g.emoji||'')}" maxlength="4"></div>
+      </div>
+      <label>Deskripsi (dilihat pembeli saat membuka grup ini)</label>
+      <textarea id="sgDesc">${esc(g.description||'')}</textarea>
+      <div class="flex" style="margin-top:8px">
+        <button class="btn" onclick="saveSmmGroup(${g.id})">💾 Simpan Grup</button>
+        <button class="btn ghost" onclick="cancelSmmGroupForm()">Batal</button>
+      </div>
+    </div>`;
+  document.getElementById('sgName').focus();
+}
+function cancelSmmGroupForm(){ const box = document.getElementById('smmGroupForm'); if(box) box.innerHTML = ''; }
+async function saveSmmGroup(id){
+  const name = document.getElementById('sgName').value.trim();
+  if(!name) return toast('Nama grup wajib diisi.');
+  const body = { name, emoji: document.getElementById('sgEmoji').value.trim(), description: document.getElementById('sgDesc').value.trim() };
+  try{
+    if(id) await api('/smm-groups/'+id,{method:'PUT',body:JSON.stringify(body)});
+    else await api('/smm-groups',{method:'POST',body:JSON.stringify(body)});
+    cancelSmmGroupForm(); toast(id?'Grup disimpan.':'Grup baru dibuat.'); loadSmmGroups();
+  }catch(e){ toast(e.message); }
+}
+async function deleteSmmGroup(id){
+  const g = (window._smmGroups||[]).find(x=>x.id===id);
+  if(!confirm('Hapus grup "'+(g?g.name:id)+'" beserta kategori-kategorinya? (Grup yang masih dipakai layanan tidak bisa dihapus.)')) return;
+  try{
+    await api('/smm-groups/'+id,{method:'DELETE'});
+    if(window._smmSelectedGroup===id) window._smmSelectedGroup = null;
+    toast('Grup dihapus.'); loadSmmGroups();
+  }catch(e){ toast(e.message); }
+}
+function newSmmCategory(){
+  const gid = window._smmSelectedGroup; if(!gid) return toast('Pilih grup dulu.');
+  const box = document.getElementById('smmCatForm'); if(!box) return;
+  box.innerHTML = `
+    <div class="card plain" style="box-shadow:none;margin-top:8px">
+      <h3>Tambah Kategori Baru</h3>
+      <label>Nama kategori</label>
+      <input id="scName" placeholder="Contoh: Instagram Followers">
+      <label>Deskripsi (dilihat pembeli saat membuka kategori ini)</label>
+      <textarea id="scDesc" placeholder="Contoh: Followers Instagram — naik bertahap, garansi refill."></textarea>
+      <div class="flex" style="margin-top:8px">
+        <button class="btn" onclick="saveSmmCategory()">💾 Simpan Kategori</button>
+        <button class="btn ghost" onclick="cancelSmmCatForm()">Batal</button>
+      </div>
+    </div>`;
+  document.getElementById('scName').focus();
+}
+function editSmmCategory(id){
+  const c = (window._smmCategories||[]).find(x=>x.id===id); if(!c) return;
+  const box = document.getElementById('smmCatForm'); if(!box) return;
+  const groups = window._smmGroups || [];
+  box.innerHTML = `
+    <div class="card plain" style="box-shadow:none;margin-top:8px">
+      <h3>Edit Kategori — ${esc(c.name)}</h3>
+      <label>Nama kategori</label>
+      <input id="scName" value="${esc(c.name)}">
+      <label>Sub-grup (pindah grup = layanannya ikut pindah)</label>
+      <select id="scGroup">${groups.map(g=>`<option value="${g.id}" ${c.group_id===g.id?'selected':''}>${esc((g.emoji?g.emoji+' ':'')+g.name)}</option>`).join('')}</select>
+      <label>Deskripsi (dilihat pembeli saat membuka kategori ini)</label>
+      <textarea id="scDesc">${esc(c.description||'')}</textarea>
+      <div class="flex" style="margin-top:8px">
+        <button class="btn" onclick="saveSmmCategory(${c.id})">💾 Simpan Kategori</button>
+        <button class="btn ghost" onclick="cancelSmmCatForm()">Batal</button>
+      </div>
+    </div>`;
+  document.getElementById('scName').focus();
+}
+function cancelSmmCatForm(){ const box = document.getElementById('smmCatForm'); if(box) box.innerHTML = ''; }
+async function saveSmmCategory(id){
+  const name = document.getElementById('scName').value.trim();
+  if(!name) return toast('Nama kategori wajib diisi.');
+  const body = { name, description: document.getElementById('scDesc').value.trim() };
+  if(id){
+    const gsel = document.getElementById('scGroup');
+    if(gsel) body.group_id = Number(gsel.value);
+  } else {
+    body.group_id = window._smmSelectedGroup;
+  }
+  try{
+    if(id) await api('/smm-categories/'+id,{method:'PUT',body:JSON.stringify(body)});
+    else await api('/smm-categories',{method:'POST',body:JSON.stringify(body)});
+    cancelSmmCatForm(); toast(id?'Kategori disimpan.':'Kategori baru dibuat.'); loadSmmCategories(window._smmSelectedGroup);
+  }catch(e){ toast(e.message); }
+}
+async function deleteSmmCategory(id){
+  const c = (window._smmCategories||[]).find(x=>x.id===id);
+  if(c && c.name==='Lainnya') return toast('Kategori "Lainnya" tidak boleh dihapus — ini kategori default.');
+  if(!confirm('Hapus kategori "'+(c?c.name:id)+'"? (Kategori yang masih dipakai layanan tidak bisa dihapus.)')) return;
+  try{ await api('/smm-categories/'+id,{method:'DELETE'}); toast('Kategori dihapus.'); loadSmmCategories(window._smmSelectedGroup); }catch(e){ toast(e.message); }
 }
 // Tombol
 function channelBadges(platform){
