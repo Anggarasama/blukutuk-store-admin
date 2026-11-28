@@ -685,7 +685,7 @@ function renderStockSection(list){
         <details><summary style="font-size:12px;color:var(--muted)">Tambah banyak sekaligus — satu akun per baris: email|password</summary>
           <textarea data-sbulk="${v.id}" placeholder="akun1@mail.com|Pass123&#10;akun2@mail.com|Pass456"></textarea>
           <div class="flex" style="margin-top:6px"><button class="btn sm" onclick="addStockBulk(${v.id})">＋ Tambah Banyak</button></div>
-          <p class="muted">Format per baris: email|password — boleh ditambah |username|kode|link|pin. Baris kosong atau tanpa email/password dilewati.</p>
+          <p class="muted">Format per baris: email|password — boleh ditambah |link (3 segmen, untuk OTP) atau |username|kode|link|pin (sampai 6 segmen). Baris kosong atau tanpa email/password dilewati.</p>
         </details>
         <div class="flex" style="margin-top:6px"><button class="btn sm ghost" onclick="loadVariantStock(${v.id})">🔄 Muat / Refresh Stok</button></div>
       </details>
@@ -747,10 +747,12 @@ function editProduct(id){
       <textarea id="pfDescWa">${esc(p.description_wa||p.description||'')}</textarea>
       <label>Deskripsi — Telegram (petunjuk: "ketuk tombol Beli…")</label>
       <textarea id="pfDescTg">${esc(p.description_tg||p.description||'')}</textarea>
-      <label>Template pengiriman produk (dipakai kalau varian tidak punya template sendiri — kosongkan untuk pakai template bawaan)</label>
+      <label>Template pengiriman produk (dipakai kalau varian tidak punya template sendiri — kosongkan untuk pakai template bawaan; variabel: {{email}} {{password}} {{link}} {{time}} {{kode}} {{nama_produk}} {{durasi}})</label>
       <textarea id="pfTpl" placeholder="Contoh:&#10;{{nama_produk}} — {{durasi}}&#10;Kode pesanan: {{kode}}">${esc(p.delivery_template||'')}</textarea>
       <label>Supplier Product ID / Service ID (kosongkan kalau manual)</label>
       <input id="pfSpid" value="${esc(p.supplier_product_id||'')}">
+      <label>Link (untuk OTP — dipakai {{link}} di template kalau stok tidak punya link sendiri; kosongkan kalau tidak pakai)</label>
+      <input id="pfLink" value="${esc(p.link||'')}" placeholder="https://...">
       <div class="row">
         <div><label>Kategori (grup di Katalog)</label>
           <select id="pfCat">
@@ -783,6 +785,7 @@ async function saveProductForm(id){
     delivery_template: document.getElementById('pfTpl').value,
     supplier: document.getElementById('pfSupplier').value,
     supplier_product_id: document.getElementById('pfSpid').value.trim(),
+    link: document.getElementById('pfLink').value.trim(),
     category: document.getElementById('pfCat').value,
     note_required: document.getElementById('pfNoteReq').checked,
     enabled: document.getElementById('pfEnabled').checked,
@@ -831,8 +834,10 @@ function editVariant(id){
         <div><label>Stok (otomatis / manual) — per varian</label>
           <select id="vfStockType">${VARIANT_STOCK_TYPES.map(x=>`<option value="${x}" ${v.stock_type===x?'selected':''}>${x}</option>`).join('')}</select></div>
       </div>
-      <label>Template pengiriman (pakai {{email}} {{password}} dst — kosongkan untuk pakai template produk/bawaan)</label>
+      <label>Template pengiriman (pakai {{email}} {{password}} {{link}} {{time}} dst — kosongkan untuk pakai template produk/bawaan)</label>
       <textarea id="vfTpl">${esc(v.delivery_template||'')}</textarea>
+      <label>Link (untuk OTP — dipakai {{link}} di template kalau stok tidak punya link sendiri; kosongkan kalau tidak pakai)</label>
+      <input id="vfLink" value="${esc(v.link||'')}" placeholder="https://...">
       <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" style="width:auto" id="vfEnabled" ${v.enabled?'checked':''}> Aktif (tampil di katalog bot)</label>
       <h3 style="margin-top:10px">📱 WhatsApp</h3>
       <label>Deskripsi WA (petunjuk: "ketik 1 untuk Beli…")</label>
@@ -865,6 +870,7 @@ async function saveVariantForm(id){
     kind: document.getElementById('vfKind').value,
     stock_type: document.getElementById('vfStockType').value,
     delivery_template: document.getElementById('vfTpl').value,
+    link: document.getElementById('vfLink').value.trim(),
     enabled: document.getElementById('vfEnabled').checked,
     description_wa: document.getElementById('vfDescWa').value,
     action_word: document.getElementById('vfActionWord').value.trim(),
@@ -898,7 +904,7 @@ async function loadVariantStock(id, onlyIfNotLoaded){
     // (WA/TG) dan di bagian Stok — supaya selalu sama tanpa render ulang.
     document.querySelectorAll(`[data-stockcount="${id}"]`).forEach(el=>{ el.textContent = avail; });
     box.innerHTML = rows.length
-      ? '<table><tr><th>Email</th><th>Password</th><th>Status</th><th>Kode Pesanan</th><th>Tanggal</th><th></th></tr>'+rows.map(r=>{ const p=r.payload||{}; return `<tr><td class="mono">${esc(p.email||'-')}</td><td class="mono">${esc(p.password||'-')}</td><td><span class="badge ${r.status==='available'?'ok':''}">${esc(r.status)}</span></td><td class="mono">${esc(r.order_code||'-')}</td><td class="muted">${esc((r.created_at||'').slice(0,16))}</td><td>${r.status==='available'?`<button class="btn sm danger" onclick="deleteStock(${r.id},${id})">Hapus</button>`:''}</td></tr>`; }).join('')+'</table>'
+      ? '<table><tr><th>Email</th><th>Password</th><th>Link</th><th>Status</th><th>Kode Pesanan</th><th>Tanggal</th><th></th></tr>'+rows.map(r=>{ const p=r.payload||{}; return `<tr><td class="mono">${esc(p.email||'-')}</td><td class="mono">${esc(p.password||'-')}</td><td class="mono">${p.link?`<a href="${esc(p.link)}" target="_blank" rel="noopener">🔗 link</a>`:'-'}</td><td><span class="badge ${r.status==='available'?'ok':''}">${esc(r.status)}</span></td><td class="mono">${esc(r.order_code||'-')}</td><td class="muted">${esc((r.created_at||'').slice(0,16))}</td><td>${r.status==='available'?`<button class="btn sm danger" onclick="deleteStock(${r.id},${id})">Hapus</button>`:''}</td></tr>`; }).join('')+'</table>'
       : '<p class="muted">Belum ada stok untuk varian ini.</p>';
   }catch(e){ box.innerHTML = '<p class="muted">Gagal memuat stok: '+esc(e.message)+'</p>'; }
 }
