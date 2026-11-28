@@ -367,6 +367,7 @@
       <div class="note">⚠️ Jangan pernah kirim kunci apa pun lewat chat. Isi di sini saja. Telegram Bot Token dari @BotFather. Key Lhie dari Store Bot (ditampilkan sekali). Key BuyMail setelah total deposit Rp100.000. Key Pterodactyl diawali <span class="mono">ptla_</span>.</div>
       <div id="integrations"><p class="muted">Memuat daftar kunci…</p></div>
       <div class="flex" style="margin-top:12px"><button class="btn green" onclick="saveIntegrations()">💾 Simpan Semua Integrasi</button></div>
+      <p class="muted" id="webhookLast">Memuat status webhook…</p>
     </div>
   </section>
 
@@ -1697,6 +1698,24 @@ async function loadIntegrations(){
       showTokenBanner();
       toast('Isi Admin Token dulu (kotak kuning di atas) supaya status kunci bisa dibaca. Kolom tetap bisa diisi.');
     } else toast('Gagal muat status integrasi: '+e.message);
+  }
+  loadWebhookLast(); // indikator webhook terakhir — jalan walau daftar kunci gagal
+}
+// Ronde 7e (bagian B/D): webhook NexaPayz terakhir yang diterima server
+// (GET /api/webhooks/last). Menunjukkan apakah callback NexaPayz sudah
+// pernah sampai — kalau selalu "Belum ada", callback URL belum dipasang
+// di dashboard NexaPayz.
+async function loadWebhookLast(){
+  const el = document.getElementById('webhookLast'); if(!el) return;
+  try{
+    const r = await api('/webhooks/last');
+    if(r && r.last){
+      el.innerHTML = 'Webhook NexaPayz terakhir: <b>'+esc(r.last.source)+'</b> — <span class="mono">'+esc(r.last.event_id)+'</span> ('+esc(r.last.received_at||'')+')';
+    } else {
+      el.textContent = 'Webhook NexaPayz terakhir: Belum ada webhook yang diterima.';
+    }
+  }catch(e){
+    el.textContent = e.message==='UNAUTHORIZED' ? 'Webhook NexaPayz terakhir: isi Admin Token dulu untuk melihat status webhook.' : 'Webhook NexaPayz terakhir: gagal memuat status webhook.';
   }
 }
 async function saveIntegrations(){
