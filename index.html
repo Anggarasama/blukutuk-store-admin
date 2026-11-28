@@ -290,7 +290,7 @@
   <section id="tab-supplier">
     <div class="card">
       <h2><span class="dot" style="background:linear-gradient(135deg,#d97706,#f59e0b)"></span>Supplier — pilih produk yang dijual</h2>
-      <p class="muted">Semua produk supplier default <b>OFF</b>. Anggara aktifkan sendiri yang dipilih saja. Harga jual = harga supplier + markup (isi di kolom Harga Jual). Tombol <b>Jual ▶</b> memasukkan produk ke katalog WA/Telegram dengan <b>nama produknya saja</b> (tanpa nama penyedia) — nama &amp; kode bisa diubah di tab Produk, stok ngikut Lhie. <b>SMM (Lollipop / BuzzerPanel):</b> Harga Jual yang diisi = harga <b>per 100</b> (rate supplier adalah per 1000); produk yang dipublish masuk kategori <b>smm</b> dan tampil di grup Kebutuhan Sosmed di dalam Katalog. <b>Fireflazz:</b> produk yang dipublish masuk kategori <b>topup</b> (grup Top up Game di Katalog), Harga Jual <b>wajib diisi</b> — Fireflazz sistem <b>komisi</b>, tidak ada deposit.</p>
+      <p class="muted">Semua produk supplier default <b>OFF</b>. Anggara aktifkan sendiri yang dipilih saja. Harga jual = harga supplier + markup (isi di kolom Harga Jual). Tombol <b>Jual ▶</b> memasukkan produk ke katalog WA/Telegram dengan <b>nama produknya saja</b> (tanpa nama penyedia) — nama &amp; kode bisa diubah di tab Produk, stok ngikut Lhie. <b>SMM (Lollipop / BuzzerPanel):</b> Harga Jual yang diisi = harga <b>per 100</b> (rate supplier adalah per 1000); produk yang dipublish masuk kategori <b>smm</b> dan tampil di grup Kebutuhan Sosmed di dalam Katalog. <b>Fireflazz:</b> produk yang dipublish masuk kategori <b>topup</b> (grup Top up Game di Katalog), Harga Jual <b>wajib diisi</b> — pesanan Fireflazz (Sumbu) memotong <b>saldo Sumbu</b>, isi saldo dulu (setoran pertama min Rp100.000).</p>
       <div class="flex">
         <button class="btn" onclick="syncSupplier('lhie')">↻ Sync Katalog Lhie</button>
         <button class="btn" onclick="syncSupplier('lollipop')">↻ Sync Layanan Lollipop</button>
@@ -310,7 +310,7 @@
         <li><b>Lollipop:</b> SMM (Perfect Panel API v2). Rate supplier per 1000; harga jual di panel adalah per 100. Produk yang dipublish masuk menu Kebutuhan Sosmed (kategori smm).</li>
         <li><b>BuzzerPanel:</b> SMM kedua (Perfect Panel API v2, https://buzzerpanel.id/api/v2). Sama seperti Lollipop — rate per 1000, harga jual per 100, publish ke kategori smm. API key diisi di tab Integrasi.</li>
         <li><b>BuyMail:</b> Gmail, modal contoh Rp4.800/akun, live-check 10–30 detik, refund maks 2 jam (screenshot HP). API terbuka setelah total deposit Rp100.000.</li>
-        <li><b>Fireflazz:</b> top-up game H2H, sistem <b>KOMISI</b> — tidak ada deposit yang harus diisi (tidak ada tombol deposit di Fireflazz). Toko Anggara: <span class="mono">anggaratopup.fireflazz.com</span>. Detail endpoint H2H ada di dashboard Fireflazz — samakan di kode sebelum jualan.</li>
+        <li><b>Fireflazz (Sumbu):</b> top-up game H2H — pesanan memotong <b>saldo Sumbu</b> (setoran pertama min Rp100.000, berikutnya min Rp50.000; sync katalog tidak butuh saldo). API: <span class="mono">https://sumbu.fireflazz.com/v1</span> — kosongkan isian Base URL di Integrasi bila masih berisi alamat lama. Callback pesanan: <span class="mono">/webhooks/sumbu</span> (pasang di panel Sumbu + isi Callback Secret).</li>
         <li><b>Pterodactyl:</b> jual panel, bot create user + server otomatis. Server habis masa aktif di-suspend (tidak dihapus).</li>
       </ul>
     </div>
@@ -1004,15 +1004,33 @@ async function orderDetail(code){
 async function checkDelivery(code){
   try{ const r = await api('/orders/'+encodeURIComponent(code)+'/check-delivery',{method:'POST',body:'{}'}); toast(r.state?('Status Lhie: '+r.state):(r.message||'Dicek.')); loadOrders(); }catch(e){ toast(e.message); }
 }
+// Teks kolom Stok di tab Supplier — dibaca dari stock_info (JSON string).
+//   Lhie: {stock: N} -> angka "N" (stok hasil sync terakhir).
+//   Lhie tanpa angka ({stock: null} / tanpa field) -> "Selalu tersedia"
+//   (sama seperti tampilan katalog bot).
+//   Fireflazz/Sumbu: stok berupa status ("ada"/"kosong") atau {raw} lama,
+//   bukan angka -> "—" (stok numerik tidak ditampilkan untuk Fireflazz).
+//   stock_info rusak / bukan JSON -> "—" (tidak crash).
+function supplierStockText(x){
+  try{
+    const o = typeof x.stock_info === 'string' ? JSON.parse(x.stock_info || '{}') : (x.stock_info || {});
+    // Number(null) === 0 — jadi cek tipe dulu: hanya angka (atau string angka) yang tampil.
+    const raw = o && o.stock;
+    const n = (typeof raw === 'number') ? raw : (typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN);
+    if (Number.isFinite(n) && n >= 0) return String(Math.floor(n));
+    if (x.supplier === 'fireflazz') return '—';
+    return 'Selalu tersedia';
+  }catch(e){ return '—'; }
+}
 // Supplier
 async function loadSupplier(supplier){
   try{
     const list = await api('/supplier-products?supplier='+supplier);
     hideTokenBanner();
     document.getElementById('supplierList').innerHTML = `<h3>${esc(supplier.toUpperCase())} — ${list.length} produk tersimpan</h3>` + (list.length
-      ? '<table><tr><th>Produk</th><th>Harga Supplier</th><th>Harga Jual</th><th>Aktif?</th><th>Aksi</th></tr>'+list.map(x=>`<tr>
+      ? '<table><tr><th>Produk</th><th>Harga Supplier</th><th>Harga Jual</th><th>Stok</th><th>Aktif?</th><th>Aksi</th></tr>'+list.map(x=>`<tr>
         <td>${esc(x.name)}<br><span class="mono muted">${esc(x.supplier_product_id)}</span></td>
-        <td>${rupiah(x.supplier_price)}</td><td>${rupiah(x.sell_price)}</td>
+        <td>${rupiah(x.supplier_price)}</td><td>${rupiah(x.sell_price)}</td><td>${supplierStockText(x)}</td>
         <td><span class="badge ${x.enabled?'ok':'warn'}">${x.enabled?'AKTIF':'OFF'}</span></td>
         <td><button class="btn sm" onclick="toggleSupplier(${x.id},${x.enabled?0:1})">${x.enabled?'Matikan':'Aktifkan'}</button> <button class="btn sm" onclick="publishSupplier(${x.id})">Jual ▶</button></td></tr>`).join('')+'</table>'
       : '<p class="muted">Belum ada — tekan Sync dulu.</p>');
