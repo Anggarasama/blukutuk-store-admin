@@ -1022,23 +1022,112 @@ function supplierStockText(x){
     return 'Selalu tersedia';
   }catch(e){ return '—'; }
 }
+// Supplier — cari + urutkan + filter harga (ronde 7b, semua client-side
+// dari data yang sudah dimuat; tidak ada endpoint baru). State filter
+// di-reset tiap ganti supplier (loadSupplier).
+function filterSupplierItems(list, f){
+  const q = String((f && f.q) || '').trim().toLowerCase();
+  const minRaw = String((f && f.min) || '').trim();
+  const maxRaw = String((f && f.max) || '').trim();
+  const min = Number(minRaw);
+  const max = Number(maxRaw);
+  return (list || []).filter((x) => {
+    if (q && String(x.name || '').toLowerCase().indexOf(q) === -1) return false;
+    const price = Number(x.supplier_price || 0);
+    if (minRaw !== '' && Number.isFinite(min) && price < min) return false;
+    if (maxRaw !== '' && Number.isFinite(max) && price > max) return false;
+    return true;
+  });
+}
+function sortSupplierItems(list, sortKey){
+  const arr = (list || []).slice();
+  const byName = (a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'id');
+  if (sortKey === 'baru') return arr.sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')) || byName(a, b));
+  if (sortKey === 'murah') return arr.sort((a, b) => (Number(a.supplier_price || 0) - Number(b.supplier_price || 0)) || byName(a, b));
+  if (sortKey === 'mahal') return arr.sort((a, b) => (Number(b.supplier_price || 0) - Number(a.supplier_price || 0)) || byName(a, b));
+  return arr.sort(byName); // 'nama' (A–Z, default — sama seperti urutan server)
+}
+function supplierFilterActive(f){
+  return !!((f && String(f.q || '').trim()) || (f && String(f.min || '').trim() !== '') || (f && String(f.max || '').trim() !== ''));
+}
+function readSupplierFilterFromDom(){
+  const v = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+  return { q: v('supSearch'), sort: v('supSort') || 'nama', min: v('supMin'), max: v('supMax') };
+}
+function supplierFilterChanged(){ renderSupplierTable(); }
+function supplierClearSearch(){ const el = document.getElementById('supSearch'); if (el) el.value = ''; renderSupplierTable(); }
+function supplierResetFilter(){
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  set('supSearch', ''); set('supSort', 'nama'); set('supMin', ''); set('supMax', '');
+  renderSupplierTable();
+}
+function renderSupplierTable(){
+  const list = window._supplierData || [];
+  const supplier = window._supplierView || window._supplier || 'lhie';
+  const f = readSupplierFilterFromDom();
+  window._supplierFilter = f;
+  const shown = sortSupplierItems(filterSupplierItems(list, f), f.sort || 'nama');
+  const wrap = document.getElementById('supplierTableWrap');
+  if (!wrap) return;
+  const syncLine = (window._lastSync && window._lastSync.supplier === supplier && window._lastSync.text)
+    ? `<p class="muted">Rincian sync terakhir: ${esc(window._lastSync.text)}</p>` : '';
+  const countLine = supplierFilterActive(f)
+    ? `<p class="muted">Menampilkan ${shown.length} dari ${list.length} produk.</p>` : '';
+  if (!list.length) { wrap.innerHTML = syncLine + '<p class="muted">Belum ada — tekan Sync dulu.</p>'; return; }
+  wrap.innerHTML = syncLine + countLine + (shown.length
+    ? '<table><tr><th>Produk</th><th>Harga Supplier</th><th>Harga Jual</th><th>Stok</th><th>Aktif?</th><th>Aksi</th></tr>'+shown.map(x=>`<tr>
+        <td>${esc(x.name)}<br><span class="mono muted">${esc(x.supplier_product_id)}</span></td>
+        <td>${rupiah(x.supplier_price)}</td><td>${rupiah(x.sell_price)}</td><td>${supplierStockText(x)}</td>
+        <td><span class="badge ${x.enabled?'ok':'warn'}">${x.enabled?'AKTIF':'OFF'}</span></td>
+        <td><button class="btn sm" onclick="toggleSupplier(${x.id},${x.enabled?0:1})">${x.enabled?'Matikan':'Aktifkan'}</button> <button class="btn sm" onclick="publishSupplier(${x.id})">Jual ▶</button></td></tr>`).join('')+'</table>'
+    : '<p class="muted">Tidak ada produk yang cocok — ubah pencarian/filter, atau tekan ↺ Reset filter.</p>');
+}
 // Supplier
 async function loadSupplier(supplier){
   try{
     const list = await api('/supplier-products?supplier='+supplier);
     hideTokenBanner();
-    document.getElementById('supplierList').innerHTML = `<h3>${esc(supplier.toUpperCase())} — ${list.length} produk tersimpan</h3>` + (list.length
-      ? '<table><tr><th>Produk</th><th>Harga Supplier</th><th>Harga Jual</th><th>Stok</th><th>Aktif?</th><th>Aksi</th></tr>'+list.map(x=>`<tr>
-        <td>${esc(x.name)}<br><span class="mono muted">${esc(x.supplier_product_id)}</span></td>
-        <td>${rupiah(x.supplier_price)}</td><td>${rupiah(x.sell_price)}</td><td>${supplierStockText(x)}</td>
-        <td><span class="badge ${x.enabled?'ok':'warn'}">${x.enabled?'AKTIF':'OFF'}</span></td>
-        <td><button class="btn sm" onclick="toggleSupplier(${x.id},${x.enabled?0:1})">${x.enabled?'Matikan':'Aktifkan'}</button> <button class="btn sm" onclick="publishSupplier(${x.id})">Jual ▶</button></td></tr>`).join('')+'</table>'
-      : '<p class="muted">Belum ada — tekan Sync dulu.</p>');
+    window._supplierData = list;
+    window._supplierView = supplier;
+    window._supplierFilter = { q: '', sort: 'nama', min: '', max: '' };
     window._supplier = supplier;
+    // Kontrol cari/urut/filter dirender sekali per loadSupplier; tabel
+    // dirender ulang oleh renderSupplierTable() di dalam #supplierTableWrap
+    // (kontrol tidak ikut terhapus saat mengetik). Input ikut gaya panel
+    // (min-height 48px dari CSS).
+    document.getElementById('supplierList').innerHTML = `<h3>${esc(supplier.toUpperCase())} — ${list.length} produk tersimpan</h3>
+      <div class="flex" style="flex-wrap:wrap">
+        <input id="supSearch" type="search" placeholder="🔍 Cari nama layanan..." oninput="supplierFilterChanged()" style="flex:1;min-width:200px" enterkeyhint="search">
+        <button class="btn sm ghost" onclick="supplierClearSearch()">✕ Hapus</button>
+        <select id="supSort" onchange="supplierFilterChanged()" style="max-width:260px">
+          <option value="nama">Nama (A–Z)</option>
+          <option value="baru">Terakhir diperbarui (terbaru)</option>
+          <option value="murah">Harga Supplier termurah</option>
+          <option value="mahal">Harga Supplier termahal</option>
+        </select>
+        <input id="supMin" type="number" inputmode="numeric" placeholder="Min Rp" oninput="supplierFilterChanged()" style="max-width:140px">
+        <input id="supMax" type="number" inputmode="numeric" placeholder="Maks Rp" oninput="supplierFilterChanged()" style="max-width:140px">
+        <button class="btn sm ghost" onclick="supplierResetFilter()">↺ Reset filter</button>
+      </div>
+      <div id="supplierTableWrap"></div>`;
+    renderSupplierTable();
   }catch(e){ handleLoadError(e, 'supplierList'); }
 }
 async function syncSupplier(kind){
-  try{ const r = await api('/supplier-products/sync-'+kind,{method:'POST',body:'{}'}); toast('Sync selesai: '+(r.synced||0)+' item. Default OFF.'); loadSupplier(kind); }catch(e){ toast(e.message); }
+  try{
+    const r = await api('/supplier-products/sync-'+kind,{method:'POST',body:'{}'});
+    // Ronde 7b: rincian kategori dari API (mis. "Instagram Followers
+    // Indonesia ×68") — supaya terlihat persis apa yang dikasih API.
+    let catText = '';
+    if (r.categories && typeof r.categories === 'object') {
+      const entries = Object.entries(r.categories).sort((a, b) => b[1] - a[1]);
+      const top = entries.slice(0, 5).map(([k, v]) => `${k} ×${v}`).join(', ');
+      catText = top + (entries.length > 5 ? `, +${entries.length - 5} kategori lain` : '');
+      window._lastSync = { supplier: kind, categories: r.categories, text: catText, total: r.synced || 0 };
+    }
+    toast('Sync selesai: '+(r.synced||0)+' item'+(catText?' — '+catText:'')+'. Default OFF.');
+    loadSupplier(kind);
+  }catch(e){ toast(e.message); }
 }
 async function toggleSupplier(id,enabled){
   try{
